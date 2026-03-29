@@ -260,6 +260,17 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
   <div class="card"><div class="ct">🤖 Sabah Asistanı</div><div id="ast" style="font-size:14px;color:var(--lac);font-style:italic;line-height:1.6">-</div></div>
   <div class="card"><div class="ct">📍 Bugün Ziyaret Edilecekler</div><div id="rbl"><div class="bos">Yükleniyor...</div></div></div>
   <div class="card"><div class="ct">⚠ Geciken Ziyaretler</div><div id="rgl"><div class="bos">Yükleniyor...</div></div></div>
+  <div class="card" id="takip-kart" style="display:none"><div class="ct">⏰ Bugün Takip Edilecek Teklifler</div><div id="rtakip"></div></div>
+  <div class="card"><div class="ct">📊 Alım Özeti</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <button class="fb on" onclick="raporSure('bugun',this)" style="flex:1;text-align:center">Bugün</button>
+      <button class="fb" onclick="raporSure('hafta',this)" style="flex:1;text-align:center">Bu Hafta</button>
+      <button class="fb" onclick="raporSure('ay',this)" style="flex:1;text-align:center">Bu Ay</button>
+    </div>
+    <div id="alim-ozet"><div class="bos">Yükleniyor...</div></div>
+  </div>
+  <div class="card"><div class="ct">👤 Personel Performansı</div><div id="per-perf"><div class="bos">Yükleniyor...</div></div></div>
+  <button class="btn btn-gri" onclick="excelIndir()" style="margin-bottom:8px">📥 Bu Ayı Excel'e Aktar</button>
 </div>
 
 <!-- ZİYARET TAKVİMİ -->
@@ -322,13 +333,20 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
 
 <!-- TEKLİF -->
 <div class="panel" id="p-teklif">
-  <div style="margin-bottom:10px"><button class="btn btn-lac" style="padding:10px;font-size:14px" onclick="mAc('tm')">+ Yeni Teklif</button></div>
+  <div style="display:flex;gap:8px;margin-bottom:8px">
+    <button class="btn btn-lac" style="padding:10px;font-size:14px;flex:1" onclick="mAc('tm')">+ Yeni Teklif</button>
+  </div>
+  <div class="aw" style="margin-bottom:8px">
+    <span class="ai">⌕</span>
+    <input type="text" id="tara" placeholder="İşletme ara..." oninput="tAra(this.value)" style="background:#f8f9fa;padding-left:33px">
+    <button class="at" id="tarat" onclick="tAraTemizle()">×</button>
+  </div>
   <div class="fr">
     <button class="fb on" onclick="tFil('',this)">Tümü</button>
     <button class="fb" onclick="tFil('İlk Temas',this)">İlk Temas</button>
     <button class="fb" onclick="tFil('Teklif Verildi',this)">Teklif</button>
     <button class="fb" onclick="tFil('Müzakerede',this)">Müzakere</button>
-    <button class="fb" onclick="tFil('Takip Gerekli',this)">Takip</button>
+    <button class="fb" onclick="tFil('Takip Gerekli',this)">⏰ Takip <span id="takip-sayi" style="background:var(--kir);color:#fff;border-radius:8px;padding:0 5px;font-size:10px;display:none"></span></button>
     <button class="fb" onclick="tFil('Sözleşme İmzalandı',this)">Sözleşme</button>
     <button class="fb" onclick="tFil('Reddetti',this)">Reddetti</button>
   </div>
@@ -392,8 +410,10 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
       <button class="ab rd" data-v="Reddetti" onclick="aSec(this)">Reddetti</button>
     </div>
     <div class="fg2"><div><label>Rakip Firma</label><input type="text" id="trf" placeholder="Firma..."></div><div><label>Rakip Fiyat</label><input type="number" id="trp" placeholder="—" step="0.25"></div></div>
+    <div class="fg"><label>Takip Tarihi</label><input type="date" id="ttakip"></div>
     <div class="fg"><label>Not</label><textarea id="tnot" placeholder="Müşteri tepkisi..."></textarea></div>
-    <button class="btn btn-lac" onclick="tKaydet()" id="tkbtn">Teklifi Kaydet</button>
+    <button class="btn btn-lac" onclick="tKaydet()" id="tkbtn" style="margin-bottom:8px">Teklifi Kaydet</button>
+    <button class="btn btn-kir" id="tsil-btn" onclick="tSil()" style="display:none">🗑 Teklifi Sil</button>
     <div style="height:8px"></div>
   </div>
 </div>
@@ -474,6 +494,15 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     <div style="height:8px"></div>
   </div>
 </div>
+
+<!-- MODAL: ZİYARET TARİHÇESİ -->
+<div class="mb" id="trhm">
+  <div class="modal">
+    <div class="mttl"><span id="trh-ttl">Ziyaret Tarihçesi</span><button class="mkapat" onclick="mKapat('trhm')">×</button></div>
+    <div id="trh-liste"><div class="bos">Yükleniyor...</div></div>
+    <div style="height:8px"></div>
+  </div>
+</div>
 <!-- NAV -->
 <div class="nav">
   <button class="nb on" onclick="nav('rapor',this)"><span class="nb-i">☀</span>Rapor</button>
@@ -481,7 +510,7 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
   <button class="nb" onclick="nav('saha',this)"><span class="nb-i">📍</span>Saha</button>
   <button class="nb" onclick="nav('kayitlar',this)"><span class="nb-i">📋</span>Kayıtlar</button>
   <button class="nb" onclick="nav('musteriler',this)"><span class="nb-i">🏪</span>Cariler</button>
-  <button class="nb" onclick="nav('teklif',this)"><span class="nb-i">💼</span>Teklif</button>
+  <button class="nb" onclick="nav('teklif',this)" id="nb-teklif"><span class="nb-i">💼</span>Teklif<span id="teklif-badge" style="display:none;background:var(--kir);color:#fff;border-radius:8px;font-size:9px;padding:1px 4px;margin-left:1px;font-weight:700;line-height:1.4"></span></button>
   <button class="nb" onclick="nav('makbuz',this)"><span class="nb-i">🧾</span>Makbuz</button>
 </div>
 
@@ -697,7 +726,10 @@ function zvKart(m,cls,et){
     <div class="zi-h" onclick="rotaGit(${m.id})"><div class="zi-isim">${m.isim}</div><span class="badge b-${cls==='zamaninda'?'zaman':cls}">${et}</span></div>
     <div class="zi-alt" onclick="rotaGit(${m.id})">${m.il}${m.bolge?' · '+m.bolge:''}${m.varil?' · '+m.varil+' varil':''} · ${sz}${m.sonDoluluk?' · 🛢%'+m.sonDoluluk:''}</div>
     ${f?`<div class="zi-f" onclick="rotaGit(${m.id})">${f}</div>`:''}
-    <button class="btn-sm" style="background:var(--lac-a);color:var(--lac);margin-top:6px;font-size:11px" onclick="mstDuz(${m.id})">✎ Kartı Düzenle</button>
+    <div style="display:flex;gap:5px;margin-top:6px">
+      <button class="btn-sm" style="background:var(--lac-a);color:var(--lac);font-size:11px;flex:1" onclick="mstDuz(${m.id})">✎ Düzenle</button>
+      <button class="btn-sm" style="background:#f0f0f0;color:#555;font-size:11px;flex:1" onclick="trhGosterId(${m.id})">📋 Tarihçe</button>
+    </div>
   </div>`;
 }
 
@@ -770,7 +802,20 @@ function kListele(){
     return false;
   });
   const kg=bk.filter(z=>z.islem==='Alım Yapıldı').reduce((t,z)=>t+(parseFloat(z.kg)||0),0);
-  el('ko').textContent=bk.filter(z=>z.islem==='Alım Yapıldı').length+' alım · '+kg.toFixed(0)+' kg';
+  const alimlar=bk.filter(z=>z.islem==='Alım Yapıldı');
+  const topKg2=alimlar.reduce((t,z)=>t+(parseFloat(z.kg)||0),0);
+  // KDV hariç gerçek maliyet
+  let topMaliyet=0,maliyetliKg=0;
+  alimlar.forEach(z=>{
+    const kg2=parseFloat(z.kg)||0;
+    const tutar=parseFloat(z.tutar)||0;
+    if(tutar>0&&kg2>0){
+      const gercek=z.odemeTuru==='Nakit'?tutar:tutar/1.20;
+      topMaliyet+=gercek;maliyetliKg+=kg2;
+    }
+  });
+  const ortFiyat=maliyetliKg>0?(topMaliyet/maliyetliKg).toFixed(2):null;
+  el('ko').textContent=alimlar.length+' alım · '+topKg2.toFixed(0)+' kg'+(ortFiyat?' · Ort: '+ortFiyat+'₺/kg':'');
   const c=el('kl');if(!bk.length){c.innerHTML='<div class="bos">Bugün henüz kayıt yok</div>';return;}
   c.innerHTML=bk.map(z=>{
     const al=z.islem==='Alım Yapıldı';
@@ -950,7 +995,10 @@ function mlRender(){
     return`<div style="background:#fff;border-radius:10px;padding:12px;margin-bottom:7px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px">
         <div style="font-size:14px;font-weight:600;color:#222;flex:1;padding-right:8px">${m.isim}</div>
-        <button class="btn-sm" style="background:var(--lac-a);color:var(--lac);flex-shrink:0" onclick="mstDuz(${m.id})">✎ Düzenle</button>
+        <div style="display:flex;gap:5px">
+          <button class="btn-sm" style="background:var(--lac-a);color:var(--lac)" onclick="mstDuz(${m.id})">✎ Düzenle</button>
+          <button class="btn-sm" style="background:#f0f0f0;color:#555" onclick="trhGosterId(${m.id})">📋 Tarihçe</button>
+        </div>
       </div>
       <div style="font-size:12px;color:var(--gri);margin-bottom:3px">${m.il}${m.bolge?' · '+m.bolge:''}${m.varil?' · '+m.varil+' varil':''}</div>
       ${m.adres?`<div style="font-size:11px;color:var(--gri);margin-bottom:3px">${m.adres}</div>`:''}
@@ -960,17 +1008,320 @@ function mlRender(){
     </div>`;
   }).join('');
 }
+
+//=== TEKLİF ARAMA ===
+let tAraMet='';
+function tAra(v){tAraMet=v;el('tarat').style.display=v?'block':'none';tListele();}
+function tAraTemizle(){el('tara').value='';el('tarat').style.display='none';tAraMet='';tListele();}
+
+function tSil(){
+  if(!duzId)return;
+  if(!confirm('Bu teklif silinsin mi?'))return;
+  tkl=tkl.filter(t=>t.id!==duzId);
+  localStorage.setItem('t',JSON.stringify(tkl));
+  shSil('delete',duzId);
+  mKapat('tm');tListele();
+  dm('✓ Teklif silindi','ok');
+  duzId=null;
+}
+
+function takipBadgeGuncelle(){
+  const bugun=bug();
+  const takipler=tkl.filter(t=>t.asama==='Takip Gerekli'&&t.takipTarihi&&t.takipTarihi<=bugun);
+  const badge=el('teklif-badge');
+  const takipSayi=el('takip-sayi');
+  if(takipler.length>0){
+    if(badge){badge.textContent=takipler.length;badge.style.display='inline';}
+    if(takipSayi){takipSayi.textContent=takipler.length;takipSayi.style.display='inline';}
+  } else {
+    if(badge)badge.style.display='none';
+    if(takipSayi)takipSayi.style.display='none';
+  }
+  // Rapordaki takip kartı
+  const kart=el('takip-kart');
+  const liste=el('rtakip');
+  if(kart&&liste){
+    if(takipler.length>0){
+      kart.style.display='block';
+      liste.innerHTML=takipler.map(t=>`
+        <div style="padding:9px 0;border-bottom:1px solid #f5f5f5">
+          <div style="font-size:13px;font-weight:600;color:#222">${t.isletme}</div>
+          <div style="font-size:11px;color:var(--gri)">${t.il||''}${t.personel?' · '+t.personel:''}</div>
+          <div style="font-size:11px;color:var(--kir);font-weight:600">⏰ Takip tarihi: ${t.takipTarihi}</div>
+        </div>`).join('');
+    } else {
+      kart.style.display='none';
+    }
+  }
+}
+
+//=== RAPOR ÖZETİ ===
+let raporSureSec='bugun';
+function raporSure(sure,btn){
+  raporSureSec=sure;
+  document.querySelectorAll('#p-rapor .fb').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  alimOzetRender();
+}
+
+function alimOzetRender(){
+  const bugun=bug();
+  const bugunD=new Date();
+  let zFilt=zvr.filter(z=>z.islem==='Alım Yapıldı');
+  
+  if(raporSureSec==='bugun'){
+    zFilt=zFilt.filter(z=>ft2(z.tarih)===bugun||z.tarih===bugun);
+  } else if(raporSureSec==='hafta'){
+    const pzt=new Date(bugunD);
+    pzt.setDate(bugunD.getDate()-bugunD.getDay()+1);
+    pzt.setHours(0,0,0,0);
+    zFilt=zFilt.filter(z=>{
+      const t=z.tarih.includes('T')?new Date(z.tarih):new Date(z.tarih.split('.').reverse().join('-'));
+      return t>=pzt;
+    });
+  } else if(raporSureSec==='ay'){
+    const ay=bugunD.getMonth(),yil=bugunD.getFullYear();
+    zFilt=zFilt.filter(z=>{
+      const t=z.tarih.includes('T')?new Date(z.tarih):new Date(z.tarih.split('.').reverse().join('-'));
+      return t.getMonth()===ay&&t.getFullYear()===yil;
+    });
+  }
+  
+  const topKg=zFilt.reduce((s,z)=>s+(parseFloat(z.kg)||0),0);
+  const topTutar=zFilt.reduce((s,z)=>s+(parseFloat(z.tutar)||0),0);
+  const ziyaretSayisi=zFilt.length;
+  
+  // İl bazlı
+  const ilBazli={};
+  zFilt.forEach(z=>{
+    if(!z.il)return;
+    if(!ilBazli[z.il])ilBazli[z.il]={kg:0,sayi:0};
+    ilBazli[z.il].kg+=parseFloat(z.kg)||0;
+    ilBazli[z.il].sayi++;
+  });
+  
+  // Ödeme türü dağılımı
+  const nakit=zFilt.filter(z=>z.odemeTuru==='Nakit').length;
+  const yakit=zFilt.filter(z=>z.odemeTuru==='Yakıt Kartı').length;
+  const faturali=zFilt.filter(z=>z.odemeTuru==='Faturalı').length;
+  
+  const c=el('alim-ozet');
+  if(!ziyaretSayisi){c.innerHTML='<div class="bos">Bu dönemde kayıt yok</div>';return;}
+  
+  // KDV hariç gerçek maliyet hesabı
+  let topMaliyet=0,maliyetliKg=0;
+  zFilt.forEach(z=>{
+    const kg2=parseFloat(z.kg)||0;
+    const tutar=parseFloat(z.tutar)||0;
+    if(tutar>0&&kg2>0){
+      const gercek=z.odemeTuru==='Nakit'?tutar:tutar/1.20;
+      topMaliyet+=gercek;maliyetliKg+=kg2;
+    }
+  });
+  const ortFiyat=maliyetliKg>0?(topMaliyet/maliyetliKg).toFixed(2):null;
+
+  // İl bazlı KDV hariç ortalama fiyat
+  const ilMaliyet={};
+  zFilt.forEach(z=>{
+    if(!z.il)return;
+    if(!ilMaliyet[z.il])ilMaliyet[z.il]={kg:0,sayi:0,maliyet:0,malKg:0};
+    const kg2=parseFloat(z.kg)||0;
+    const tutar=parseFloat(z.tutar)||0;
+    ilMaliyet[z.il].kg+=kg2;ilMaliyet[z.il].sayi++;
+    if(tutar>0&&kg2>0){
+      const gercek=z.odemeTuru==='Nakit'?tutar:tutar/1.20;
+      ilMaliyet[z.il].maliyet+=gercek;ilMaliyet[z.il].malKg+=kg2;
+    }
+  });
+
+  // İşletme bazlı top 10
+  const mstBazli={};
+  zFilt.forEach(z=>{
+    const k=z.musteriAdi||'Bilinmiyor';
+    if(!mstBazli[k])mstBazli[k]={kg:0,sayi:0,il:z.il||''};
+    mstBazli[k].kg+=parseFloat(z.kg)||0;mstBazli[k].sayi++;
+  });
+  const top10=Object.entries(mstBazli).sort((a,b)=>b[1].kg-a[1].kg).slice(0,10);
+
+  let html=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div style="background:var(--yes-a);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:var(--yes-d)">${topKg.toFixed(0)}</div>
+        <div style="font-size:10px;color:var(--gri)">Toplam Kg</div>
+      </div>
+      <div style="background:var(--lac-a);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:var(--lac)">${ziyaretSayisi}</div>
+        <div style="font-size:10px;color:var(--gri)">Alım Sayısı</div>
+      </div>
+      <div style="background:var(--tur-a);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:var(--tur)">${topTutar.toFixed(0)}₺</div>
+        <div style="font-size:10px;color:var(--gri)">Ödenen Tutar</div>
+      </div>
+      <div style="background:#F3EEFE;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:22px;font-weight:700;color:#6B3FA0">${ortFiyat||'-'}</div>
+        <div style="font-size:10px;color:var(--gri)">Ort. Alış ₺/kg (KDV Hariç)</div>
+      </div>
+    </div>
+    <div style="background:var(--yes-a);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:var(--yes-d)">
+      ℹ️ Faturalı ve Yakıt Kartı ödemelerinde tutar ÷ 1.20 (KDV hariç) alınmıştır
+    </div>`;
+
+  // İl bazlı dağılım + ortalama fiyat
+  html+=`<div style="font-size:11px;font-weight:700;color:var(--lac);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">📍 İl Bazlı Dağılım & Ortalama Fiyat</div>`;
+  const ilSirali=Object.entries(ilMaliyet).sort((a,b)=>b[1].kg-a[1].kg);
+  const maxKg=ilSirali[0]?ilSirali[0][1].kg:1;
+  
+  // En ucuz il (KDV hariç)
+  const ilFiyatlar=ilSirali.filter(([il,v])=>v.malKg>0).map(([il,v])=>({il,ort:v.maliyet/v.malKg}));
+  const enUcuz=ilFiyatlar.length?ilFiyatlar.sort((a,b)=>a.ort-b.ort)[0]:null;
+  
+  if(enUcuz){
+    html+=`<div style="background:var(--yes-a);border:1px solid var(--yes);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px">
+      🏆 En uygun il: <strong>${enUcuz.il}</strong> — ${enUcuz.ort.toFixed(2)}₺/kg (KDV hariç)
+    </div>`;
+  }
+  
+  ilSirali.forEach(([il,v])=>{
+    const yuzde=Math.round((v.kg/maxKg)*100);
+    const ortIl=v.malKg>0?(v.maliyet/v.malKg).toFixed(2):'-';
+    html+=`<div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px">
+        <span style="font-weight:600">${il}</span>
+        <span style="color:var(--gri)">${v.kg.toFixed(0)} kg · ${ortIl}₺/kg</span>
+      </div>
+      <div style="background:#f0f0f0;border-radius:4px;height:6px">
+        <div style="background:var(--yes);border-radius:4px;height:100%;width:${yuzde}%"></div>
+      </div>
+    </div>`;
+  });
+
+  // Top 10 işletme
+  if(top10.length){
+    html+=`<div style="font-size:11px;font-weight:700;color:var(--lac);margin:12px 0 8px;text-transform:uppercase;letter-spacing:.5px">🏅 Top 10 İşletme</div>`;
+    top10.forEach(([isim,v],i)=>{
+      const madalya=i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
+      html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f5f5f5">
+        <div>
+          <div style="font-size:12px;font-weight:600">${madalya} ${isim}</div>
+          <div style="font-size:10px;color:var(--gri)">${v.il} · ${v.sayi} alım</div>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:var(--yes-d)">${v.kg.toFixed(0)} kg</div>
+      </div>`;
+    });
+  }
+
+  html+=`<div style="font-size:11px;font-weight:700;color:var(--lac);margin:12px 0 8px;text-transform:uppercase;letter-spacing:.5px">💳 Ödeme Türü Dağılımı</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${nakit?`<span style="background:var(--yes-a);color:var(--yes-d);padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600">💵 Nakit: ${nakit}</span>`:''}
+      ${yakit?`<span style="background:var(--tur-a);color:var(--tur);padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600">⛽ Yakıt: ${yakit}</span>`:''}
+      ${faturali?`<span style="background:var(--lac-a);color:var(--lac);padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600">🧾 Fatura: ${faturali}</span>`:''}
+    </div>`;
+  
+  c.innerHTML=html;
+}
+
+function perPerfRender(){
+  const bugunD=new Date();
+  const ay=bugunD.getMonth(),yil=bugunD.getFullYear();
+  const ayZvr=zvr.filter(z=>{
+    const t=z.tarih.includes('T')?new Date(z.tarih):new Date(z.tarih.split('.').reverse().join('-'));
+    return t.getMonth()===ay&&t.getFullYear()===yil&&z.islem==='Alım Yapıldı';
+  });
+  
+  const perBazli={};
+  ayZvr.forEach(z=>{
+    const p=z.personel||'Bilinmiyor';
+    if(!perBazli[p])perBazli[p]={kg:0,sayi:0};
+    perBazli[p].kg+=parseFloat(z.kg)||0;
+    perBazli[p].sayi++;
+  });
+  
+  const c=el('per-perf');
+  if(!Object.keys(perBazli).length){c.innerHTML='<div class="bos">Bu ay kayıt yok</div>';return;}
+  
+  const sirali=Object.entries(perBazli).sort((a,b)=>b[1].kg-a[1].kg);
+  const maxKg=sirali[0][1].kg||1;
+  c.innerHTML='<div style="font-size:11px;color:var(--gri);margin-bottom:8px">Bu Ay</div>'+sirali.map(([p,v],i)=>`
+    <div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px">
+        <span style="font-weight:600">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'  '} ${p}</span>
+        <span style="color:var(--gri)">${v.kg.toFixed(0)} kg · ${v.sayi} alım</span>
+      </div>
+      <div style="background:#f0f0f0;border-radius:4px;height:6px">
+        <div style="background:var(--lac);border-radius:4px;height:100%;width:${Math.round((v.kg/maxKg)*100)}%"></div>
+      </div>
+    </div>`).join('');
+}
+
+//=== ZİYARET TARİHÇESİ ===
+function trhGosterId(id){
+  const m=mst.find(x=>String(x.id)===String(id));
+  if(m)trhGoster(m.id, m.isim);
+}
+
+function trhGoster(mstId, isim){
+  el('trh-ttl').textContent=isim+' — Ziyaret Tarihçesi';
+  const mZvr=zvr.filter(z=>String(z.musteriId)===String(mstId)).slice(0,30);
+  const c=el('trh-liste');
+  if(!mZvr.length){c.innerHTML='<div class="bos">Ziyaret kaydı bulunamadı</div>';mAc('trhm');return;}
+  c.innerHTML=mZvr.map(z=>{
+    const al=z.islem==='Alım Yapıldı';
+    return`<div style="padding:10px 0;border-bottom:1px solid #f5f5f5">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <div style="font-size:13px;font-weight:600;color:${al?'var(--yes-d)':'var(--kir)'}">${z.islem}</div>
+        <div style="font-size:11px;color:var(--gri)">${ft2(z.tarih)} ${saatStr2(z.saat)||''}</div>
+      </div>
+      ${al?`<div style="font-size:12px;color:#444">${z.kg} kg · ${z.odemeTuru}${z.tutar?' · '+z.tutar+'₺':''}</div>`:''}
+      ${z.doluluk?`<div style="font-size:11px;color:var(--gri)">Doluluk: %${z.doluluk}</div>`:''}
+      <div style="font-size:11px;color:var(--gri)">${z.personel||''}</div>
+      ${z.notlar?`<div style="font-size:11px;color:#666;font-style:italic">${z.notlar}</div>`:''}
+    </div>`;
+  }).join('');
+  mAc('trhm');
+}
+
+//=== EXCEL AKTARMA ===
+function excelIndir(){
+  const bugunD=new Date();
+  const ay=bugunD.getMonth(),yil=bugunD.getFullYear();
+  const ayZvr=zvr.filter(z=>{
+    const t=z.tarih.includes('T')?new Date(z.tarih):new Date(z.tarih.split('.').reverse().join('-'));
+    return t.getMonth()===ay&&t.getFullYear()===yil;
+  });
+  
+  let csv='Tarih,Saat,İşletme,İl,Personel,İşlem,KG,Ödeme Türü,Ödenen Tutar,KDV Hariç Tutar,KDV Hariç ₺/kg,Doluluk,Not\n';
+  ayZvr.forEach(z=>{
+    const kg2=parseFloat(z.kg)||0;
+    const tutar=parseFloat(z.tutar)||0;
+    const gercek=tutar>0?(z.odemeTuru==='Nakit'?tutar:tutar/1.20).toFixed(2):'';
+    const birimFiyat=(gercek&&kg2>0)?(parseFloat(gercek)/kg2).toFixed(2):'';
+    csv+=`${ft2(z.tarih)},${saatStr2(z.saat)||''},${(z.musteriAdi||'').replace(/,/g,' ')},${z.il||''},${z.personel||''},${z.islem||''},${z.kg||''},${z.odemeTuru||''},${z.tutar||''},${gercek},${birimFiyat},${z.doluluk||''},${(z.notlar||'').replace(/,/g,' ')}\n`;
+  });
+  
+  const bom='\uFEFF';
+  const blob=new Blob([bom+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`ekosa_ziyaretler_${yil}_${String(ay+1).padStart(2,'0')}.csv`;
+  a.click();
+  dm('✓ Excel dosyası indirildi','ok');
+}
+
 //=== TEKLİF ===
 function aSec(btn){document.querySelectorAll('.ag .ab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');sAsama=btn.dataset.v;}
 function tFil(a,btn){tFAs=a;document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));btn.classList.add('on');tListele();}
 
 function tListele(){
-  const L=tFAs?tkl.filter(t=>t.asama===tFAs):tkl;
-  const c=el('tl');if(!L.length){c.innerHTML='<div class="bos">Teklif kaydı yok</div>';return;}
+  let L=tFAs?tkl.filter(t=>t.asama===tFAs):tkl;
+  if(tAraMet&&tAraMet.length>1){const n=nrm(tAraMet);L=L.filter(t=>nrm(t.isletme).includes(n)||nrm(t.il||'').includes(n));}
+  const bugun=bug();
+  const c=el('tl');if(!L.length){c.innerHTML='<div class="bos">Teklif kaydı yok</div>';takipBadgeGuncelle();return;}
   const acl={'Sözleşme İmzalandı':'soz','Reddetti':'red','Müzakerede':'muz','Takip Gerekli':'tak'};
   const abg={'İlk Temas':'as0','Teklif Verildi':'as1','Müzakerede':'as2','Sözleşme İmzalandı':'as3','Reddetti':'as4','Takip Gerekli':'as5'};
-  c.innerHTML=L.slice(0,50).map(t=>`
-    <div class="tk ${acl[t.asama]||''}">
+  c.innerHTML=L.slice(0,50).map(t=>{
+    const takipGecti=t.takipTarihi&&t.takipTarihi<=bugun;
+    const takipYaklasan=t.takipTarihi&&t.takipTarihi>bugun;
+    return`<div class="tk ${acl[t.asama]||''}">
       <div class="tkh"><div class="tki">${t.isletme}</div><span class="tkt">${t.tarih||''}</span></div>
       <div class="tkil">${t.il||''}${t.personel?' · '+t.personel:''}</div>
       <div class="tkf">
@@ -979,9 +1330,13 @@ function tListele(){
         ${t.faturali?`<span class="tf tfa">F:${t.faturali}₺</span>`:''}
       </div>
       <span class="as ${abg[t.asama]||'as0'}">${t.asama}</span>
+      ${takipGecti?`<div style="font-size:11px;color:var(--kir);font-weight:600;margin-top:4px">⏰ Takip tarihi geçti: ${t.takipTarihi}</div>`:''}
+      ${takipYaklasan?`<div style="font-size:11px;color:var(--tur);font-weight:600;margin-top:4px">⏰ Takip: ${t.takipTarihi}</div>`:''}
       ${t.not?`<div style="font-size:11px;color:var(--gri);margin-top:4px;font-style:italic">${t.not.substring(0,70)}</div>`:''}
       <button class="td" onclick="tDuz(${t.id})">✎ Düzenle</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+  takipBadgeGuncelle();
 }
 
 function tKaydet(){
@@ -995,11 +1350,11 @@ function tKaydet(){
     if(idx!==-1){tkl[idx]={...tkl[idx],isletme:is,il,nakit:na||'',yakit:ya||'',faturali:fa||'',asama:sAsama,rakipFirma:el('trf').value.trim(),rakipFiyat:el('trp').value||'',not:el('tnot').value.trim()};shG('update',tkl[idx]);dm('✓ Güncellendi!','ok');}
     duzId=null;el('tmttl').textContent='Yeni Teklif';el('tkbtn').textContent='Teklifi Kaydet';
   }else{
-    const t={id:Date.now(),tarih:bug(),isletme:is,il,personel:per,nakit:na||'',yakit:ya||'',faturali:fa||'',asama:sAsama,rakipFirma:el('trf').value.trim(),rakipFiyat:el('trp').value||'',takipTarihi:'',not:el('tnot').value.trim()};
+    const t={id:Date.now(),tarih:bug(),isletme:is,il,personel:per,nakit:na||'',yakit:ya||'',faturali:fa||'',asama:sAsama,rakipFirma:el('trf').value.trim(),rakipFiyat:el('trp').value||'',takipTarihi:el('ttakip').value||'',not:el('tnot').value.trim()};
     tkl.unshift(t);shG('add',t);dm('✓ Teklif kaydedildi!','ok');
   }
   localStorage.setItem('t',JSON.stringify(tkl));mKapat('tm');tListele();
-  ['tis','tna','tya','tfa','trf','trp','tnot'].forEach(id=>el(id).value='');el('til').value='';
+  ['tis','tna','tya','tfa','trf','trp','tnot','ttakip'].forEach(id=>el(id).value='');el('til').value='';if(el('tsil-btn'))el('tsil-btn').style.display='none';
 }
 
 function tDuz(id){
@@ -1007,7 +1362,9 @@ function tDuz(id){
   duzId=id;el('tmttl').textContent='Düzenle';el('tkbtn').textContent='Güncelle';
   el('tis').value=t.isletme||'';el('til').value=t.il||'';
   el('tna').value=t.nakit||'';el('tya').value=t.yakit||'';el('tfa').value=t.faturali||'';
-  el('trf').value=t.rakipFirma||'';el('trp').value=t.rakipFiyat||'';el('tnot').value=t.not||'';
+  el('trf').value=t.rakipFirma||'';el('trp').value=t.rakipFiyat||'';
+  el('ttakip').value=t.takipTarihi||'';el('tnot').value=t.not||'';
+  el('tsil-btn').style.display='block';
   document.querySelectorAll('.ag .ab').forEach(b=>{b.classList.remove('on');if(b.dataset.v===t.asama)b.classList.add('on');});
   sAsama=t.asama;mAc('tm');
 }
