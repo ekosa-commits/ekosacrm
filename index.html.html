@@ -49,13 +49,13 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);min-he
 .sync-dot.hata{background:var(--kir)}
 
 /* NAV */
-.nav{display:flex;background:#fff;border-top:1px solid #e5e5e5;position:fixed;bottom:0;left:0;right:0;z-index:100;box-shadow:0 -2px 8px rgba(0,0,0,.07)}
-.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 2px 5px;cursor:pointer;border:none;background:none;color:#aaa;font-size:10px;font-family:inherit;gap:2px}
-.nb-i{font-size:21px;line-height:1}
+.nav{display:flex;background:#fff;border-top:1px solid #e5e5e5;position:fixed;bottom:0;left:0;right:0;z-index:100;box-shadow:0 -2px 8px rgba(0,0,0,.07);padding-bottom:env(safe-area-inset-bottom)}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 2px 6px;cursor:pointer;border:none;background:none;color:#aaa;font-size:11px;font-family:inherit;gap:3px;min-height:56px}
+.nb-i{font-size:26px;line-height:1}
 .nb.on{color:var(--lac)}
 
 /* PANEL */
-.panel{display:none;padding:12px 13px 80px}
+.panel{display:none;padding:12px 13px 90px}
 .panel.on{display:block}
 
 /* KART */
@@ -408,6 +408,13 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     <pre id="mkb-pre" style="white-space:pre-wrap;font-size:11px;color:#333"></pre>
   </div>
 
+  <div class="card" style="margin-bottom:8px">
+    <div class="ct">Yazıcı Genişliği</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="ib on" id="w80" onclick="yaziciSec(80,this)">80mm</button>
+      <button class="ib" id="w58" onclick="yaziciSec(58,this)">58mm</button>
+    </div>
+  </div>
   <button class="btn btn-lac" onclick="mkbYazdir()" style="margin-bottom:8px">🖨 Yazdır (RawBT)</button>
   <button class="btn btn-gri" onclick="mkbOnizle()" style="margin-bottom:8px">👁 Önizle</button>
   <button class="btn btn-gri" onclick="mkbTemizle()">Formu Temizle</button>
@@ -826,7 +833,7 @@ function otomatikTutar(){
   else if(sOdeme==='Yakıt Kartı')fiyat=parseFloat(sMst.yakitFiyat)||0;
   else if(sOdeme==='Faturalı')fiyat=parseFloat(sMst.faturaliFiyat)||0;
   if(fiyat>0){
-    const tutar=sOdeme==='Faturalı'?kg*fiyat*1.20:kg*fiyat;
+    const tutar=kg*fiyat;
     el('stu').value=tutar.toFixed(2);
   }
 }
@@ -1116,8 +1123,8 @@ function tSil(){
 }
 
 function takipBadgeGuncelle(){
-  const bugun=bug();
-  const takipler=tkl.filter(t=>t.asama==='Takip Gerekli'&&t.takipTarihi&&t.takipTarihi<=bugun);
+  const bugunISO2=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
+  const takipler=tkl.filter(t=>t.asama==='Takip Gerekli'&&t.takipTarihi&&t.takipTarihi<=bugunISO2);
   const badge=el('teklif-badge');
   const takipSayi=el('takip-sayi');
   if(takipler.length>0){
@@ -1409,8 +1416,10 @@ function tListele(){
   const acl={'Sözleşme İmzalandı':'soz','Reddetti':'red','Müzakerede':'muz','Takip Gerekli':'tak'};
   const abg={'İlk Temas':'as0','Teklif Verildi':'as1','Müzakerede':'as2','Sözleşme İmzalandı':'as3','Reddetti':'as4','Takip Gerekli':'as5'};
   c.innerHTML=L.slice(0,50).map(t=>{
-    const takipGecti=t.takipTarihi&&t.takipTarihi<=bugun;
-    const takipYaklasan=t.takipTarihi&&t.takipTarihi>bugun;
+    // takipTarihi YYYY-MM-DD, bugun DD.MM.YYYY - karşılaştırma için normalize et
+    const bugunISO=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
+    const takipGecti=t.takipTarihi&&t.takipTarihi<=bugunISO;
+    const takipYaklasan=t.takipTarihi&&t.takipTarihi>bugunISO;
     return`<div class="tk ${acl[t.asama]||''}">
       <div class="tkh"><div class="tki">${t.isletme}</div><span class="tkt">${t.tarih||''}</span></div>
       <div class="tkil">${t.il||''}${t.personel?' · '+t.personel:''}</div>
@@ -1461,6 +1470,14 @@ function tDuz(id){
 
 //=== MAKBUZ ===
 let mkbSecIsletme=null;
+let mkbYaziciW=parseInt(localStorage.getItem('mkb_yazici')||'80');
+
+function yaziciSec(w,btn){
+  mkbYaziciW=w;
+  localStorage.setItem('mkb_yazici',String(w));
+  document.querySelectorAll('#w80,#w58').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
 
 function mkbIsletmeAra(v){
   const r=el('mis-sonuc');
@@ -1483,28 +1500,52 @@ function mkbIsletmeSec(id){
   el('mis-secili').style.display='block';
   el('mis-isim').textContent=m.isim;
   el('mis-il').textContent=m.il||'';
-  // Önceki makbuz kişilerini göster
   mkbOncekiGoster(m.id);
 }
 
-function mkbOncekiGoster(mstId){
-  // localStorage'dan bu işletmeye ait önceki kişileri bul
-  const mkbKisiler=JSON.parse(localStorage.getItem('mkb_kisiler')||'{}');
-  const kisiler=mkbKisiler[String(mstId)]||[];
+async function mkbOncekiGoster(mstId){
   const c=el('mkb-onceki');
   const l=el('mkb-onceki-liste');
-  if(kisiler.length>0){
-    l.innerHTML=kisiler.slice(-5).reverse().map(k=>`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f5f5f5">
-        <div>
-          <div style="font-size:12px;font-weight:600">${k.ad}</div>
-          <div style="font-size:10px;color:var(--gri)">${k.tc}</div>
-        </div>
-        <button class="btn-sm" style="background:var(--lac-a);color:var(--lac)" onclick="mkbKisiSec('${k.ad}','${k.tc}')">Seç</button>
-      </div>`).join('');
-    c.style.display='block';
-  } else {
-    c.style.display='none';
+  c.style.display='none';
+  try{
+    // Önce lokal cache'e bak
+    const cacheKey='mkb_kisiler_'+mstId;
+    let kisiler=JSON.parse(localStorage.getItem(cacheKey)||'[]');
+    
+    // Sheets'ten çek (arka planda)
+    const r=await ft(SURL+'?action=getMakbuzKisiler&musteriId='+mstId,8000);
+    const d=await r.json();
+    if(d.kisiler&&d.kisiler.length){
+      kisiler=d.kisiler;
+      localStorage.setItem(cacheKey,JSON.stringify(kisiler));
+    }
+    
+    if(kisiler.length>0){
+      l.innerHTML=kisiler.map(k=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#222">${k.ad}</div>
+            <div style="font-size:11px;color:var(--gri)">TC: ${k.tc}</div>
+          </div>
+          <button class="btn-sm btn-lac" onclick="mkbKisiSec('${k.ad}','${k.tc}')">Seç</button>
+        </div>`).join('');
+      c.style.display='block';
+    }
+  }catch(e){
+    // Çevrimdışı - sadece lokal cache
+    const cacheKey='mkb_kisiler_'+mstId;
+    const kisiler=JSON.parse(localStorage.getItem(cacheKey)||'[]');
+    if(kisiler.length>0){
+      l.innerHTML=kisiler.map(k=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#222">${k.ad}</div>
+            <div style="font-size:11px;color:var(--gri)">TC: ${k.tc}</div>
+          </div>
+          <button class="btn-sm btn-lac" onclick="mkbKisiSec('${k.ad}','${k.tc}')">Seç</button>
+        </div>`).join('');
+      c.style.display='block';
+    }
   }
 }
 
@@ -1560,38 +1601,47 @@ function mkbMetinOlustur(){
   const C='================================';
   const K='--------------------------------';
 
+  // Yazıcı genişliği - 80mm için 48 karakter, 58mm için 32 karakter
+  const W=mkbYaziciW===58?32:48;
+  const C2='='.repeat(W);
+  const K2='-'.repeat(W);
+  const orta=(s)=>{const bosluk=Math.max(0,Math.floor((W-s.length)/2));return ' '.repeat(bosluk)+s;};
+
   let m='';
   m+=`\n`;
-  m+=`     EKOSA CEVRE COZUMLERI\n`;
-  m+=` Gida Hay. San. Tic. Ltd. Sti.\n`;
-  m+=`${il?'        '+il+'\n':''}`;
-  m+=`${C}\n`;
-  m+=`        TEDIYE MAKBUZU\n`;
-  m+=`${C}\n`;
+  m+=orta('EKOSA CEVRE COZUMLERI')+`\n`;
+  m+=orta('Gida Hay. San. Tic. Ltd. Sti.')+`\n`;
+  m+=orta('Afyon/Dinar')+`\n`;
+  m+=orta('Aktoprak Muc. Mevkii')+`\n`;
+  m+=orta('Karadeniz Sk. 132 Blok A No:1-2')+`\n`;
+  m+=orta('VKN: 3292317330 - Dinar V.D.')+`\n`;
+  m+=`${C2}\n`;
+  m+=orta('TEDIYE MAKBUZU')+`\n`;
+  m+=`${C2}\n`;
   m+=`Makbuz No : ${no}\n`;
   m+=`Tarih     : ${tar}\n`;
-  m+=`${K}\n`;
-  m+=`Adres     : ${trCevir(il)}\n`;
-  m+=`${K}\n`;
+  m+=`${K2}\n`;
+  m+=`Isletme Ili: ${trCevir(il||'')}\n`;
+  m+=`${K2}\n`;
   m+=`Odemeyi Alan Kisi:\n`;
   m+=`Ad Soyad  : ${trCevir(ad)}\n`;
   m+=`T.C. No   : ${tc}\n`;
-  m+=`${K}\n`;
+  m+=`${K2}\n`;
   m+=`Mal/Hizmet Cinsi:\n`;
   m+=`  BITKISEL ATIK YAG BEDELI\n`;
-  m+=`${K}\n`;
+  m+=`${K2}\n`;
   m+=`ODENEN TUTAR  : ${mk} TL\n`;
   m+=`${trCevir(yz)}\n`;
-  m+=`${C}\n`;
+  m+=`${C2}\n`;
   m+=`\n`;
   m+=`Yukaridaki belirtilen mal/hizmet\n`;
   m+=`bedelini eksiksiz aldim.\n`;
   m+=`\n`;
-  m+=`${K}\n`;
-  m+=`Teslim Eden        Teslim Alan\n`;
+  m+=`${K2}\n`;
+  m+=`Teslim Eden      Teslim Alan\n`;
   m+=`\n\n\n`;
-  m+=`_______________  _______________\n`;
-  m+=`${C}\n`;
+  m+=`_______________  _____________\n`;
+  m+=`${C2}\n`;
   m+=`\n\n\n`;
 
   return m;
@@ -1620,16 +1670,20 @@ function mkbYazdir(){
   const yz=el('myz').textContent;
   const il=mkbSecIsletme?mkbSecIsletme.il:'';
 
-  // Kişiyi kaydet (hafıza)
+  // Kişiyi hem lokale hem Sheets'e kaydet
   if(mkbSecIsletme){
-    const mkbKisiler=JSON.parse(localStorage.getItem('mkb_kisiler')||'{}');
-    const mstId=String(mkbSecIsletme.id);
-    if(!mkbKisiler[mstId])mkbKisiler[mstId]=[];
-    // Aynı TC yoksa ekle
-    if(!mkbKisiler[mstId].find(k=>k.tc===tc)){
-      mkbKisiler[mstId].push({ad,tc});
+    const cacheKey='mkb_kisiler_'+mkbSecIsletme.id;
+    const kisiler=JSON.parse(localStorage.getItem(cacheKey)||'[]');
+    if(!kisiler.find(k=>k.tc===tc)){
+      kisiler.unshift({ad,tc});
+      localStorage.setItem(cacheKey,JSON.stringify(kisiler));
     }
-    localStorage.setItem('mkb_kisiler',JSON.stringify(mkbKisiler));
+    // Sheets'e gönder - tüm cihazlarda ortak hafıza
+    shG('addMakbuzKisi',{
+      musteriId:mkbSecIsletme.id,
+      musteriAdi:mkbSecIsletme.isim,
+      ad,tc
+    });
   }
 
   // Sheets'e kaydet
@@ -1799,6 +1853,8 @@ function gf(t){
 
 // Kayıtlı oturum varsa direkt aç
 mkbBilgi();ddDoldur();
+// Yazıcı seçimini set et
+if(mkbYaziciW===58){const b=document.getElementById('w58');const b80=document.getElementById('w80');if(b&&b80){b.classList.add('on');b80.classList.remove('on');}}
 // Kayıtlar tarih inputunu bugüne set et
 const kTarihEl=document.getElementById('k-tarih');
 if(kTarihEl){const d=new Date();kTarihEl.value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
