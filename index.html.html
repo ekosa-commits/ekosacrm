@@ -277,6 +277,7 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
   </div>
   <div class="card"><div class="ct">👤 Personel Performansı</div><div id="per-perf"><div class="bos">Yükleniyor...</div></div></div>
   <button class="btn btn-gri" onclick="excelIndir()" style="margin-bottom:8px">📥 Bu Ayı Excel'e Aktar</button>
+  <button class="btn btn-gri" onclick="bhRaporGoster()" style="margin-bottom:8px">📊 Bizimhesap Günlük Raporu</button>
 </div>
 
 <!-- ZİYARET TAKVİMİ -->
@@ -293,7 +294,18 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     <div class="ct">İşletme Seç</div>
     <div class="aw"><span class="ai">⌕</span><input type="text" id="sa" placeholder="Kayıtlı işletme ara..." oninput="sAra(this.value)" autocomplete="off"></div>
     <div id="sar" style="max-height:200px;overflow-y:auto;border:1px solid #f0f0f0;border-radius:8px;display:none"></div>
-    <div class="sk" id="ss"><div class="sn" id="sn">—</div><div class="sa" id="salt">—</div><div class="sf" id="sf"></div></div>
+    <div class="sk" id="ss">
+      <div class="sn" id="sn">—</div>
+      <div class="sa" id="salt">—</div>
+      <div class="sf" id="sf"></div>
+      <div id="s-yakit-kart" style="display:none;margin-top:8px;background:#fff;border-radius:7px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:10px;color:var(--gri);font-weight:600">YAKIT KARTI NO</div>
+          <div style="font-size:14px;font-weight:700;color:var(--lac);letter-spacing:1px" id="s-kart-no">—</div>
+        </div>
+        <button onclick="yakitKartKopyalaAc()" style="background:var(--yes);color:#fff;border:none;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">⛽ Kopyala & Yükle</button>
+      </div>
+    </div>
     <div style="background:#fff8e1;border-radius:8px;padding:8px 11px;margin-top:8px;font-size:12px;color:#856404">
       ⚠️ Ziyaret yapabilmek için işletmenin cari kartı olmalı.<br>
       Yoksa önce cari kart açın:
@@ -328,8 +340,18 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     </div>
     <div class="fg" style="margin-bottom:0"><label>Not</label><input type="text" id="snot" placeholder="Özel durum..."></div>
   </div>
-  <button class="btn btn-yes" onclick="zvKaydet()">📍 Ziyareti Kaydet & Gönder</button>
+  <button class="btn btn-yes" onclick="zvKaydet()" id="zv-kaydet-btn">📍 Ziyareti Kaydet & Gönder</button>
   <div style="height:8px"></div>
+  <!-- Teslim Fişi ve Makbuz - kayıt sonrası görünür -->
+  <div id="saha-islemler" style="display:none;margin-top:8px">
+    <div style="background:var(--yes-a);border-radius:10px;padding:12px;margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;color:var(--yes-d);margin-bottom:8px">✅ Kayıt tamamlandı!</div>
+      <button class="btn btn-lac" onclick="teslimFisiGoster()" style="margin-bottom:8px;padding:11px">🧾 Teslim Fişi Bas</button>
+      <div id="nakit-mkb-btn" style="display:none">
+        <button class="btn btn-gri" onclick="sahaMakbuzAc()" style="padding:11px">💵 Tediye Makbuzu Kes</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- KAYITLAR -->
@@ -562,6 +584,31 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     <div style="height:8px"></div>
   </div>
 </div>
+
+<!-- MODAL: TESLİM FİŞİ -->
+<div class="mb" id="teslim-m">
+  <div class="modal" style="font-family:-apple-system,sans-serif">
+    <div class="mttl"><span>🧾 Teslim Fişi</span><button class="mkapat" onclick="mKapat('teslim-m')">×</button></div>
+    <div id="teslim-icerik" style="font-size:12px;line-height:1.8;background:#fff"></div>
+    <div style="height:10px"></div>
+    <button class="btn btn-lac" onclick="teslimFisiYazdir()" style="margin-bottom:8px">🖨 Yazdır (RawBT)</button>
+    <button class="btn btn-gri" onclick="mKapat('teslim-m')">Kapat</button>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- MODAL: BİZİMHESAP RAPORU -->
+<div class="mb" id="bh-m">
+  <div class="modal">
+    <div class="mttl"><span>📊 Bizimhesap Raporu</span><button class="mkapat" onclick="mKapat('bh-m')">×</button></div>
+    <div style="font-size:12px;color:var(--gri);margin-bottom:10px" id="bh-tarih"></div>
+    <div id="bh-icerik" style="background:#f8f9fa;border-radius:8px;padding:12px;font-size:12px;line-height:2;white-space:pre-wrap;max-height:60vh;overflow-y:auto"></div>
+    <div style="height:10px"></div>
+    <button class="btn btn-lac" onclick="bhKopyala()" style="margin-bottom:8px">📋 Kopyala</button>
+    <button class="btn btn-gri" onclick="mKapat('bh-m')">Kapat</button>
+    <div style="height:8px"></div>
+  </div>
+</div>
 <!-- NAV -->
 <div class="nav">
   <button class="nb on" onclick="nav('rapor',this)"><span class="nb-i">☀</span>Rapor</button>
@@ -784,6 +831,8 @@ function raporRender(){
     <div style="font-size:15px;line-height:1.5;color:var(--lac)">${mesaj}</div>
   `;
   el('rbl').innerHTML=b.length?b.slice(0,10).map(m=>ziKart(m,'bugun','📍 Bugün')).join(''):'<div class="bos">Bugün için plan yok</div>';
+  // Kalan güne göre sırala (en acil önce)
+  g.sort((a,b)=>a.ka-b.ka);b.sort((a,b)=>a.ka-b.ka);
   el('rgl').innerHTML=g.length?g.slice(0,15).map(m=>ziKart(m,'acil',Math.abs(m.ka)+' gün gecikti')).join(''):'<div class="bos" style="color:var(--yes-d)">✓ Geciken yok!</div>';
 }
 
@@ -883,6 +932,19 @@ function mstSec(m){
   else if(m.yakitFiyat)odSec(document.querySelector('[data-v="Yakıt Kartı"]'));
   else if(m.faturaliFiyat)odSec(document.querySelector('[data-v="Faturalı"]'));
   setTimeout(otomatikTutar,50);
+  // Yakıt kartı göster
+  const ykDiv=el('s-yakit-kart');
+  const ykNo=el('s-kart-no');
+  if(ykDiv&&ykNo){
+    if(m.yakitKartNo){
+      ykNo.textContent=m.yakitKartNo;
+      ykDiv.style.display='flex';
+    } else {
+      ykDiv.style.display='none';
+    }
+  }
+  // Saha işlemler alanını sıfırla
+  el('saha-islemler').style.display='none';
 }
 
 function islemSec(v,btn){
@@ -960,7 +1022,12 @@ async function zvKaydet(){
   if(kb){kb.textContent='📍 Ziyareti Kaydet & Gönder';kb.style.background='var(--yes)';}
   raporRender();zvRender();kListele();
   dm('✓ Kaydedildi — '+z.musteriAdi,'ok');
-  nav('kayitlar',document.querySelectorAll('.nb')[3]);
+  // Teslim fişi ve makbuz butonlarını göster
+  sonKaydedilenZ=z;sMstSon=sMst;
+  el('saha-islemler').style.display='block';
+  if(z.odemeTuru==='Nakit')el('nakit-mkb-btn').style.display='block';
+  else el('nakit-mkb-btn').style.display='none';
+  nav('saha',document.querySelectorAll('.nb')[2]);
 }
 
 function ymKaydet(){
@@ -1563,6 +1630,208 @@ function haftalikGrafikCiz(){
     ctx.font=`${today?'bold ':''} ${W>280?10:9}px -apple-system,sans-serif`;
     ctx.textAlign='center';
     ctx.fillText(gunler[i],x+barW/2,H-8);
+  });
+}
+
+
+//=== TESLİM FİŞİ ===
+let sonKaydedilenZ = null;
+
+function teslimFisiGoster(){
+  if(!sonKaydedilenZ||!sMstSon)return;
+  const z=sonKaydedilenZ, m=sMstSon;
+  const fiyat=z.odemeTuru==='Nakit'?parseFloat(m.nakitFiyat)||0:
+               z.odemeTuru==='Yakıt Kartı'?parseFloat(m.yakitFiyat)||0:
+               parseFloat(m.faturaliFiyat)||0;
+  const kg=parseFloat(z.kg)||0;
+  const net=kg*fiyat;
+  const kdv=z.odemeTuru==='Faturalı'?net*0.20:0;
+  const toplam=net+kdv;
+  const kdvOran=z.odemeTuru==='Faturalı'?'%20':'%0';
+
+  const icerik=el('teslim-icerik');
+  icerik.innerHTML=`
+    <div style="text-align:center;padding:8px 0;border-bottom:2px solid #1E2D6B;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:700;color:#1E2D6B">Ekosa Çevre Çözümleri</div>
+      <div style="font-size:11px;color:#444">Gıda Hay.San.Tic.Ltd.Şti</div>
+      <div style="font-size:10px;color:#666">Aktoprak Mücavir Mevkii Karadeniz Sk.132 A Blok</div>
+      <div style="font-size:10px;color:#666">No1-2 Dinar/Afyonkarahisar | 0549 155 03 00</div>
+      <div style="font-size:10px;color:#666">Dinar V.D 329 231 73 30 | www.ekosacevre.com</div>
+      <div style="font-size:10px;color:#666">LİSANS: 1244234</div>
+    </div>
+    <div style="text-align:center;font-size:13px;font-weight:700;color:#1E2D6B;margin-bottom:10px">
+      Bitkisel Atık Yağ Teslim Fişi
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+      <span style="color:#666">Tarih:</span><span style="font-weight:600">${z.tarih}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+      <span style="color:#666">İşletme:</span><span style="font-weight:600;text-align:right;max-width:60%">${m.isim}</span>
+    </div>
+    <div style="border-top:1px solid #ddd;border-bottom:1px solid #ddd;padding:8px 0;margin-bottom:8px">
+      <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;font-size:11px;font-weight:700;color:#666;margin-bottom:4px">
+        <span>Açıklama</span><span>Miktar</span><span>Fiyat</span><span>Tutar</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;font-size:12px">
+        <span>Bitkisel Atık Yağ</span>
+        <span>${kg} kg</span>
+        <span>${fiyat>0?fiyat.toFixed(2)+' ₺':'-'}</span>
+        <span style="font-weight:600">${net>0?net.toFixed(2)+' ₺':'-'}</span>
+      </div>
+    </div>
+    <div style="text-align:right;font-size:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+        <span style="color:#666">Net:</span><span>${net.toFixed(2)} ₺</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+        <span style="color:#666">KDV (${kdvOran}):</span><span>${kdv.toFixed(2)} ₺</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;font-size:13px;border-top:1px solid #ddd;padding-top:4px">
+        <span>Toplam:</span><span style="color:#1E2D6B">${toplam.toFixed(2)} ₺</span>
+      </div>
+    </div>
+    <div style="margin-top:10px;padding:8px;background:#f8f8f8;border-radius:6px;font-size:10px;color:#555;line-height:1.6">
+      İşbu fiş ile tarafınıza; 06/06/2015 tarihli Bitkisel Atık Yağların Kontrolü Yönetmeliği kapsamında bitkisel atık yağlarınız için MoTAT (Mobil Atık Takip Sistemi) üzerinden atık gönderim kaydı açmanızın zorunlu olduğu bildirilmiştir. Bu yükümlülüğün yerine getirilmemesinden doğacak her türlü idari ve hukuki sorumluluk işletmenize aittir.
+    </div>
+    <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:20px;text-align:center;font-size:11px">
+      <div>
+        <div style="border-top:1px solid #333;margin-top:30px;padding-top:4px">Teslim Eden</div>
+      </div>
+      <div>
+        <div style="border-top:1px solid #333;margin-top:30px;padding-top:4px">Teslim Alan</div>
+      </div>
+    </div>`;
+  mAc('teslim-m');
+}
+
+let sMstSon=null; // Son kaydedilen müşteri
+
+function teslimFisiYazdir(){
+  const z=sonKaydedilenZ, m=sMstSon;
+  if(!z||!m)return;
+  const fiyat=z.odemeTuru==='Nakit'?parseFloat(m.nakitFiyat)||0:
+               z.odemeTuru==='Yakıt Kartı'?parseFloat(m.yakitFiyat)||0:
+               parseFloat(m.faturaliFiyat)||0;
+  const kg=parseFloat(z.kg)||0;
+  const net=kg*fiyat;
+  const kdv=z.odemeTuru==='Faturalı'?net*0.20:0;
+  const toplam=net+kdv;
+  const W=mkbYaziciW===58?32:48;
+  const C='='.repeat(W);
+  const K='-'.repeat(W);
+  const orta=(s)=>{const b=Math.max(0,Math.floor((W-s.length)/2));return ' '.repeat(b)+s;};
+  const satirlar=[
+    orta('EKOSA CEVRE COZUMLERI'),
+    orta('Gida Hay.San.Tic.Ltd.Sti'),
+    orta('Dinar/Afyonkarahisar'),
+    orta('VKN: 3292317330'),
+    orta('LISANS: 1244234'),
+    C,
+    orta('BITKISEL ATIK YAG TESLIM FISI'),
+    C,
+    'Tarih    : '+z.tarih,
+    'Isletme  : '+m.isim.substring(0,W-11),
+    K,
+    'Urun     : Bitkisel Atik Yag',
+    'Miktar   : '+kg+' kg',
+    'Birim    : '+(fiyat>0?fiyat.toFixed(2)+' TL/kg':'-'),
+    K,
+    'Net      : '+net.toFixed(2)+' TL',
+    'KDV      : '+kdv.toFixed(2)+' TL',
+    'TOPLAM   : '+toplam.toFixed(2)+' TL',
+    C,
+    'MoTAT kaydi yukumlu teslim',
+    'eden isletmeye aittir.',
+    C,
+    '',
+    'Teslim Eden    Teslim Alan',
+    '',
+    '',
+    '_____________  _____________',
+    '',''
+  ];
+  const t=satirlar.join('\n');
+  const dosya=new File([t],'teslim_fisi.txt',{type:'text/plain'});
+  if(navigator.share){navigator.share({files:[dosya],title:'Teslim Fisi'}).catch(()=>teslimFisiIndir(t));}
+  else teslimFisiIndir(t);
+}
+
+function teslimFisiIndir(t){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));
+  a.download='teslim_fisi.txt';a.click();
+}
+
+function sahaMakbuzAc(){
+  // Makbuz sekmesine geç, işletme otomatik seç
+  if(sMstSon){mkbIsletmeSec(sMstSon.id);}
+  nav('makbuz',document.querySelectorAll('.nb')[5]);
+  mKapat('teslim-m');
+}
+
+//=== YAKIT KARTI ===
+function yakitKartKopyalaAc(){
+  if(!sMst||!sMst.yakitKartNo){dm('Yakıt kart numarası girilmemiş!','err');return;}
+  // Kopyala
+  navigator.clipboard.writeText(sMst.yakitKartNo).then(()=>{
+    dm('✓ Kart no kopyalandı: '+sMst.yakitKartNo,'ok');
+  }).catch(()=>{
+    // Fallback
+    const ta=document.createElement('textarea');
+    ta.value=sMst.yakitKartNo;document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+    dm('✓ Kart no kopyalandı','ok');
+  });
+  // Shell sayfasını aç
+  setTimeout(()=>{
+    window.open('https://sfs.turkiyeshell.com/pratikkart/kart-limit-durum-guncelleme','_blank');
+  },500);
+}
+
+//=== BİZİMHESAP GÜNLÜK RAPORU ===
+function bhRaporGoster(){
+  const bugun=bug();
+  const bk=zvr.filter(z=>{
+    const zt=z.tarih&&z.tarih.includes('T')?ft2(z.tarih):z.tarih;
+    return zt===bugun&&z.islem==='Alim Yapildi'||zt===bugun&&z.islem==='Alım Yapıldı';
+  });
+  if(!bk.length){dm('Bugün alım kaydı yok','err');return;}
+  el('bh-tarih').textContent=bugun+" tarihli alimlar";
+  const satirlar=[];
+  let topKg=0,topTutar=0;
+  bk.forEach(function(z,i){
+    const m=mst.find(function(x){return String(x.id)===String(z.musteriId);});
+    const fiyat=z.odemeTuru==='Nakit'?(m?parseFloat(m.nakitFiyat)||0:0):
+                 z.odemeTuru==='Yakıt Kartı'?(m?parseFloat(m.yakitFiyat)||0:0):
+                 (m?parseFloat(m.faturaliFiyat)||0:0);
+    const kg=parseFloat(z.kg)||0;
+    const net=kg*fiyat;
+    const kdv=z.odemeTuru==='Faturalı'?net*0.20:0;
+    const toplam=net+kdv;
+    topKg+=kg;topTutar+=toplam;
+    satirlar.push((i+1)+'. '+z.musteriAdi);
+    satirlar.push('   Il: '+(z.il||''));
+    satirlar.push('   Miktar: '+kg+' kg');
+    satirlar.push('   Birim: '+(fiyat>0?fiyat.toFixed(2)+' TL/kg':'Fiyat girilmemis'));
+    satirlar.push('   Odeme: '+z.odemeTuru);
+    if(z.odemeTuru==='Yakıt Kartı'&&m&&m.yakitKartNo)satirlar.push('   Kart No: '+m.yakitKartNo);
+    satirlar.push('   Net: '+net.toFixed(2)+' TL | KDV: '+kdv.toFixed(2)+' TL | Toplam: '+toplam.toFixed(2)+' TL');
+    satirlar.push('   Personel: '+(z.personel||''));
+    satirlar.push('-------------------------------');
+  });
+  satirlar.push('');
+  satirlar.push('TOPLAM: '+topKg.toFixed(0)+' kg | '+topTutar.toFixed(2)+' TL');
+  satirlar.push('Alim Sayisi: '+bk.length);
+  el('bh-icerik').textContent=satirlar.join('\n');
+  mAc('bh-m');
+}
+
+function bhKopyala(){
+  const metin=el('bh-icerik').textContent;
+  navigator.clipboard.writeText(metin).then(()=>dm('✓ Kopyalandı','ok')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=metin;
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');
+    document.body.removeChild(ta);dm('✓ Kopyalandı','ok');
   });
 }
 
