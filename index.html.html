@@ -1090,18 +1090,18 @@ async function zvKaydet(){
       doluluk:z.doluluk||''
     });
   }
+  // Teslim fişi için ÖNCE kaydet (form temizlenmeden)
+  sonKaydedilenZ=Object.assign({},z);
+  sMstSon=Object.assign({},sMst);
+  // Sonra formu temizle
   el('skg').value='';el('stu').value='';el('snot').value='';el('sa').value='';el('sar').style.display='none';el('ss').style.display='none';
   sMst=null;duzZiyaretId=null;sOdemeDurum='yapildi';islemSec('alindi',el('ial'));
   document.querySelectorAll('#op-yapildi,#op-bekliyor').forEach(b=>{b.classList.remove('on');b.style.borderColor='';b.style.background='';b.style.color='';});
   el('op-yapildi').classList.add('on');
-  // Kaydet butonunu normale döndür
   const kb=document.querySelector('#p-saha .btn-yes');
   if(kb){kb.textContent='📍 Ziyareti Kaydet & Gönder';kb.style.background='var(--yes)';}
   raporRender();zvRender();kListele();
-  dm('✓ Kaydedildi — '+z.musteriAdi,'ok');
   // Teslim fişi ve makbuz butonlarını göster
-  sonKaydedilenZ=Object.assign({},z);
-  sMstSon=sMst?Object.assign({},sMst):null;
   el('saha-islemler').style.display='block';
   if(z.odemeTuru==='Nakit')el('nakit-mkb-btn').style.display='block';
   else el('nakit-mkb-btn').style.display='none';
