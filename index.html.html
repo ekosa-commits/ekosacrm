@@ -306,7 +306,10 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     <div class="aw"><span class="ai">⌕</span><input type="text" id="sa" placeholder="Kayıtlı işletme ara..." oninput="sAra(this.value)" autocomplete="off"></div>
     <div id="sar" style="max-height:200px;overflow-y:auto;border:1px solid #f0f0f0;border-radius:8px;display:none"></div>
     <div class="sk" id="ss">
-      <div class="sn" id="sn">—</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2px">
+        <div class="sn" id="sn" style="flex:1">—</div>
+        <button onclick="if(sMst)sahaKartAc(sMst.id)" style="background:var(--lac-a);color:var(--lac);border:none;padding:4px 9px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;flex-shrink:0;font-family:inherit;margin-left:6px">✎</button>
+      </div>
       <div class="sa" id="salt">—</div>
       <div class="sf" id="sf"></div>
       <div id="s-yakit-kart" style="display:none;margin-top:8px;background:#fff;border-radius:7px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center">
@@ -1097,7 +1100,8 @@ async function zvKaydet(){
   raporRender();zvRender();kListele();
   dm('✓ Kaydedildi — '+z.musteriAdi,'ok');
   // Teslim fişi ve makbuz butonlarını göster
-  sonKaydedilenZ=z;sMstSon=sMst;
+  sonKaydedilenZ=Object.assign({},z);
+  sMstSon=sMst?Object.assign({},sMst):null;
   el('saha-islemler').style.display='block';
   if(z.odemeTuru==='Nakit')el('nakit-mkb-btn').style.display='block';
   else el('nakit-mkb-btn').style.display='none';
@@ -1712,7 +1716,11 @@ function haftalikGrafikCiz(){
 
 //=== TESLİM FİŞİ ===
 function teslimFisiGoster(){
-  if(!sonKaydedilenZ||!sMstSon)return;
+  if(!sonKaydedilenZ||!sMstSon){
+    dm('Kayıt bilgisi bulunamadı, tekrar deneyin','err');
+    console.log('sonKaydedilenZ:',sonKaydedilenZ,'sMstSon:',sMstSon);
+    return;
+  }
   const z=sonKaydedilenZ, m=sMstSon;
   const fiyat=z.odemeTuru==='Nakit'?parseFloat(m.nakitFiyat)||0:
                z.odemeTuru==='Yakıt Kartı'?parseFloat(m.yakitFiyat)||0:
@@ -1846,12 +1854,11 @@ function sahaMakbuzAc(){
 let smkbNo=0;
 
 function sahaMakbuzModalAc(){
-  if(!sMstSon)return;
+  if(!sMstSon){dm('İşletme bilgisi bulunamadı','err');return;}
   // Makbuz no ve tarih
-  smkbNo=mkbNo+1;
-  localStorage.setItem('mn',String(smkbNo));
-  mkbNo=smkbNo;
-  el('smkb-no').value='MKB-'+String(smkbNo).padStart(4,'0');
+  mkbNo++;
+  localStorage.setItem('mn',String(mkbNo));
+  el('smkb-no').value='MKB-'+String(mkbNo).padStart(4,'0');
   el('smkb-tar').value=bug();
   // Tutarı otomatik doldur
   if(sonKaydedilenZ&&sonKaydedilenZ.tutar){
@@ -1860,6 +1867,9 @@ function sahaMakbuzModalAc(){
   }
   // Önceki kişileri yükle
   smkbOncekiYukle(sMstSon.id);
+  // Modal başlığına işletme adını yaz
+  const mttl=document.querySelector('#saha-mkb-m .mttl span');
+  if(mttl)mttl.textContent='💵 '+sMstSon.isim+' — Tediye Makbuzu';
   mAc('saha-mkb-m');
 }
 
