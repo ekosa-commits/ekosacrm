@@ -658,6 +658,10 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
       <div><label>Makbuz No</label><input type="text" id="smkb-no" readonly></div>
       <div><label>Tarih</label><input type="text" id="smkb-tar" readonly></div>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <button class="ib" id="smkb-w80" onclick="smkbYaziciSec(80,this)" style="padding:8px">📄 80mm</button>
+      <button class="ib" id="smkb-w58" onclick="smkbYaziciSec(58,this)" style="padding:8px">📄 58mm</button>
+    </div>
     <button class="btn btn-lac" onclick="smkbYazdir()" style="margin-bottom:8px">🖨 Yazdır (RawBT)</button>
     <button class="btn btn-gri" onclick="mKapat('saha-mkb-m')">İptal</button>
     <div style="height:8px"></div>
@@ -922,8 +926,8 @@ function zvRender(){
   });
   el('zvo').textContent=`${L.length} işletme · 🔴${grp.acil.length} · 📍${grp.bugun.length} · 🔶${grp.yaklasan.length}`;
   let h='';
-  // Her grubu en yakın günden en uzağa sırala
-  grp.acil.sort((a,b)=>a.ka-b.ka); // En çok gecikmiş önce
+  // Gecikenleri en çok gecikenden az gecikmişe, diğerlerini en yakından uzağa
+  grp.acil.sort((a,b)=>a.ka-b.ka); // ka negatif, -10 < -1, yani en çok geciken önce
   grp.bugun.sort((a,b)=>a.ka-b.ka);
   grp.yaklasan.sort((a,b)=>a.ka-b.ka);
   grp.zaman.sort((a,b)=>a.ka-b.ka);
@@ -1022,6 +1026,13 @@ function odSec(btn){
   // Yakıt kartı seçilince kart no bölümü göster
   const ykDiv=el('saha-yakit-kart-alan');
   if(ykDiv)ykDiv.style.display=sOdeme==='Yakıt Kartı'?'block':'none';
+  // Faturalı seçilince otomatik "Ödeme Bekliyor" yap
+  if(sOdeme==='Faturalı'){
+    odemeDurumSec('bekliyor',el('op-bekliyor'));
+  } else if(sOdeme==='Nakit'){
+    odemeDurumSec('yapildi',el('op-yapildi'));
+  }
+  // Yakıt Kartı'nda mevcut seçimi koru (personel seçsin)
   otomatikTutar();
 }
 
@@ -1725,9 +1736,10 @@ function teslimFisiGoster(){
                z.odemeTuru==='Yakıt Kartı'?parseFloat(m.yakitFiyat)||0:
                parseFloat(m.faturaliFiyat)||0;
   const kg=parseFloat(z.kg)||0;
-  const net=kg*fiyat;
-  const kdv=z.odemeTuru==='Faturalı'?net*0.20:0;
-  const toplam=net+kdv;
+  // Faturalı: cari fiyat KDV dahil. Net = toplam/1.20, KDV = toplam - net
+  const toplam=kg*fiyat;
+  const net=z.odemeTuru==='Faturalı'?toplam/1.20:toplam;
+  const kdv=z.odemeTuru==='Faturalı'?toplam-net:0;
   const kdvOran=z.odemeTuru==='Faturalı'?'%20':'%0';
   const fisNo='FIS-'+String(Date.now()).slice(-6);
 
@@ -1817,9 +1829,9 @@ function teslimFisiYazdir(){
                z.odemeTuru==='Yakıt Kartı'?parseFloat(m.yakitFiyat)||0:
                parseFloat(m.faturaliFiyat)||0;
   const kg=parseFloat(z.kg)||0;
-  const net=kg*fiyat;
-  const kdv=z.odemeTuru==='Faturalı'?net*0.20:0;
-  const toplam=net+kdv;
+  const toplam=kg*fiyat;
+  const net=z.odemeTuru==='Faturalı'?toplam/1.20:toplam;
+  const kdv=z.odemeTuru==='Faturalı'?toplam-net:0;
   const kdvOran=z.odemeTuru==='Faturalı'?'%20':'%0';
   const W=mkbYaziciW===58?32:48;
 
@@ -1923,6 +1935,13 @@ function sahaMakbuzAc(){
 //=== SAHA MAKBUZu ===
 let smkbNo=0;
 
+function smkbYaziciSec(w,btn){
+  mkbYaziciW=w;
+  localStorage.setItem('mkb_yazici',String(w));
+  document.querySelectorAll('#smkb-w80,#smkb-w58').forEach(b=>{b.classList.remove('on');});
+  btn.classList.add('on');
+}
+
 function sahaMakbuzModalAc(){
   if(!sMstSon){dm('İşletme bilgisi bulunamadı','err');return;}
   // Makbuz no ve tarih
@@ -1940,6 +1959,12 @@ function sahaMakbuzModalAc(){
   // Modal başlığına işletme adını yaz
   const mttl=document.querySelector('#saha-mkb-m .mttl span');
   if(mttl)mttl.textContent='💵 '+sMstSon.isim+' — Tediye Makbuzu';
+  // Yazıcı butonunu ayarla
+  const sw80=el('smkb-w80'),sw58=el('smkb-w58');
+  if(sw80&&sw58){
+    sw80.classList.toggle('on',mkbYaziciW!==58);
+    sw58.classList.toggle('on',mkbYaziciW===58);
+  }
   mAc('saha-mkb-m');
 }
 
@@ -2086,81 +2111,101 @@ function bhRaporGoster(){
     return zt===bugun&&(z.islem==='Alım Yapıldı'||z.islem==='Alim Yapildi');
   });
   if(!bk.length){dm('Bu tarihte alım kaydı yok','err');return;}
-  el('bh-tarih').textContent=bugun+' - Bizimhesap Alis Raporu';
+  el('bh-tarih').textContent=bugun+' - Bizimhesap Gunluk Raporu';
 
-  const odenenler=bk.filter(function(z){return !z.odemeDurum||z.odemeDurum==='yapildi'||z.odemeDurum==='Yapıldı';});
-  const bekleyenler=bk.filter(function(z){return z.odemeDurum==='bekliyor'||z.odemeDurum==='Bekliyor';});
+  const odenenler=bk.filter(function(z){
+    return !z.odemeDurum||z.odemeDurum==='yapildi'||z.odemeDurum==='Yapıldı';
+  });
+  const bekleyenler=bk.filter(function(z){
+    return z.odemeDurum==='bekliyor'||z.odemeDurum==='Bekliyor';
+  });
 
   const satirlar=[];
   let topKg=0,topTutar=0;
 
-  function formatSatir(z,i,prefix){
+  function hesapla(z){
     const m=mst.find(function(x){return String(x.id)===String(z.musteriId);});
     const fiyat=z.odemeTuru==='Nakit'?(m?parseFloat(m.nakitFiyat)||0:0):
                  z.odemeTuru==='Yakıt Kartı'?(m?parseFloat(m.yakitFiyat)||0:0):
                  (m?parseFloat(m.faturaliFiyat)||0:0);
     const kg=parseFloat(z.kg)||0;
-    const net=kg*fiyat;
-    const kdv=z.odemeTuru==='Faturalı'?net*0.20:0;
-    const hesaplananToplam=net+kdv;
-    // Personelin gerçekte ödediği tutar
-    const odenenTutar=parseFloat(z.tutar)||0;
-    const gosterilecekTutar=odenenTutar>0?odenenTutar:hesaplananToplam;
-    const fark=odenenTutar>0?odenenTutar-hesaplananToplam:0;
-    topKg+=kg; // topTutar aşağıda makbuz tutarıyla hesaplanıyor
-    satirlar.push(prefix+(i+1)+'. '+z.musteriAdi+' ('+z.il+')');
-    satirlar.push('   Miktar  : '+kg+' kg');
-    satirlar.push('   Odeme   : '+z.odemeTuru);
-    if(z.odemeTuru==='Yakıt Kartı'&&m&&m.yakitKartNo)satirlar.push('   Kart No : '+m.yakitKartNo);
-    satirlar.push('   Birim   : '+(fiyat>0?fiyat.toFixed(2)+' TL/kg':'!!! Fiyat girilmemis'));
-    if(net>0)satirlar.push('   Net     : '+net.toFixed(2)+' TL');
-    if(kdv>0)satirlar.push('   KDV     : '+kdv.toFixed(2)+' TL');
-    // Makbuz tutarı (personelin gerçekte ödediği) veya hesaplanan
-    const makbuzTutar=parseFloat(z.odenenMakbuzTutar)||0;
-    const gosterilecek=makbuzTutar>0?makbuzTutar:(odenenTutar>0?odenenTutar:hesaplananToplam);
-    const farkMkb=gosterilecek-hesaplananToplam;
-    topTutar+=gosterilecek;
-    if(hesaplananToplam>0){
-      satirlar.push('   Hesaplanan : '+hesaplananToplam.toFixed(2)+' TL');
+    const toplam=kg*fiyat;
+    const net=z.odemeTuru==='Faturalı'?toplam/1.20:toplam;
+    const kdv=z.odemeTuru==='Faturalı'?toplam-net:0;
+    return {m,fiyat,kg,net,kdv,toplam};
+  }
+
+  // ── BÖLÜM 1: TÜM ALIŞLAR (Bizimhesap'a alış olarak gir) ──
+  satirlar.push('============================');
+  satirlar.push('  1. ALIS GIRISI YAPILACAKLAR');
+  satirlar.push("  Tum alimlari Bizimhesap'a");
+  satirlar.push('  alis olarak girin');
+  satirlar.push('============================');
+  bk.forEach(function(z,i){
+    const h=hesapla(z);
+    topKg+=h.kg;topTutar+=h.toplam;
+    satirlar.push((i+1)+'. '+z.musteriAdi+' ('+z.il+')');
+    satirlar.push('   Miktar : '+h.kg+' kg');
+    satirlar.push('   Odeme  : '+z.odemeTuru);
+    if(z.odemeTuru==='Yakıt Kartı'&&h.m&&h.m.yakitKartNo)
+      satirlar.push('   Kart   : '+h.m.yakitKartNo);
+    satirlar.push('   Birim  : '+(h.fiyat>0?h.fiyat.toFixed(2)+' TL/kg':'!! Fiyat yok'));
+    if(h.kdv>0){
+      satirlar.push('   Net    : '+h.net.toFixed(2)+' TL');
+      satirlar.push('   KDV   : '+h.kdv.toFixed(2)+' TL');
     }
-    if(makbuzTutar>0){
-      satirlar.push('   MAKBUZ    : '+makbuzTutar.toFixed(2)+' TL  << Odenen');
-      if(Math.abs(farkMkb)>0.01)satirlar.push('   Fark      : '+(farkMkb>0?'+':'')+farkMkb.toFixed(2)+' TL '+(farkMkb>0?'(fazla)':'(eksik)'));
-      if(z.makbuzNo)satirlar.push('   Mkb No    : '+z.makbuzNo);
-    } else if(odenenTutar>0){
-      satirlar.push('   ODENEN    : '+odenenTutar.toFixed(2)+' TL');
-    } else {
-      satirlar.push('   TUTAR     : '+hesaplananToplam.toFixed(2)+' TL'+(fiyat===0?' !! Fiyat girilmemis':''));
-    }
-    satirlar.push('   Personel: '+(z.personel||''));
+    satirlar.push('   TOPLAM : '+h.toplam.toFixed(2)+' TL');
     satirlar.push('- - - - - - - - - - - - - -');
-  }
+  });
 
+  // ── BÖLÜM 2: ÖDEME GİRİLECEKLER ──
   if(odenenler.length){
+    satirlar.push('');
     satirlar.push('============================');
-    satirlar.push('  ODEME YAPILAN ALIMLAR: '+odenenler.length);
-    satirlar.push("  >> Bizimhesap'a girin <<");
+    satirlar.push("  2. ODEME GIRISI YAPILACAKLAR");
+    satirlar.push("  Su isletmelerin odemesini");
+    satirlar.push("  Bizimhesap'a girin");
     satirlar.push('============================');
-    odenenler.forEach(function(z,i){formatSatir(z,i,'');});
+    odenenler.forEach(function(z,i){
+      const h=hesapla(z);
+      const makbuzTutar=parseFloat(z.odenenMakbuzTutar)||0;
+      const odenen=makbuzTutar>0?makbuzTutar:h.toplam;
+      const fark=odenen-h.toplam;
+      satirlar.push((i+1)+'. '+z.musteriAdi);
+      satirlar.push('   Odeme  : '+z.odemeTuru);
+      satirlar.push('   ODENEN : '+odenen.toFixed(2)+' TL');
+      if(Math.abs(fark)>0.01)
+        satirlar.push('   Fark   : '+(fark>0?'+':'')+fark.toFixed(2)+' TL '+(fark>0?'(fazla)':'(eksik)'));
+      if(z.makbuzNo)satirlar.push('   Mkb No : '+z.makbuzNo);
+      satirlar.push('- - - - - - - - - - - - - -');
+    });
   }
 
+  // ── BÖLÜM 3: ÖDEME BEKLİYOR ──
   if(bekleyenler.length){
     satirlar.push('');
     satirlar.push('============================');
-    satirlar.push('!!! ODEME BEKLEYEN: '+bekleyenler.length);
-    satirlar.push("!!! Bizimhesap'a GIRME !!!");
-    satirlar.push("!!! Odeme yapildiktan sonra");
-    satirlar.push("!!! tekrar kontrol et");
+    satirlar.push('  3. ODEME BEKLEYENLER');
+    satirlar.push('  Bu isletmelerin odemesi');
+    satirlar.push('  henuz yapilmadi');
     satirlar.push('============================');
-    bekleyenler.forEach(function(z,i){formatSatir(z,i,'[BEKLIYOR] ');});
+    bekleyenler.forEach(function(z,i){
+      const h=hesapla(z);
+      satirlar.push((i+1)+'. '+z.musteriAdi);
+      satirlar.push('   Odeme  : '+z.odemeTuru);
+      satirlar.push('   Tutar  : '+h.toplam.toFixed(2)+' TL');
+      satirlar.push('- - - - - - - - - - - - - -');
+    });
   }
 
+  // ── ÖZET ──
   satirlar.push('');
   satirlar.push('============================');
-  satirlar.push('TOPLAM    : '+topKg.toFixed(0)+' kg');
-  satirlar.push('TUTAR     : '+topTutar.toFixed(2)+' TL');
-  satirlar.push('Odenen    : '+odenenler.length+' isletme');
-  satirlar.push('Bekleyen  : '+bekleyenler.length+' isletme');
+  satirlar.push('TOPLAM KG  : '+topKg.toFixed(0)+' kg');
+  satirlar.push('TOPLAM TL  : '+topTutar.toFixed(2)+' TL');
+  satirlar.push('Alim Sayisi: '+bk.length);
+  satirlar.push('Odenen     : '+odenenler.length+' isletme');
+  satirlar.push('Bekleyen   : '+bekleyenler.length+' isletme');
   satirlar.push('============================');
 
   el('bh-icerik').textContent=satirlar.join('\n');
