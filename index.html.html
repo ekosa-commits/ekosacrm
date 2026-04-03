@@ -1718,7 +1718,6 @@ function haftalikGrafikCiz(){
 function teslimFisiGoster(){
   if(!sonKaydedilenZ||!sMstSon){
     dm('Kayıt bilgisi bulunamadı, tekrar deneyin','err');
-    console.log('sonKaydedilenZ:',sonKaydedilenZ,'sMstSon:',sMstSon);
     return;
   }
   const z=sonKaydedilenZ, m=sMstSon;
@@ -1730,57 +1729,82 @@ function teslimFisiGoster(){
   const kdv=z.odemeTuru==='Faturalı'?net*0.20:0;
   const toplam=net+kdv;
   const kdvOran=z.odemeTuru==='Faturalı'?'%20':'%0';
+  const fisNo='FIS-'+String(Date.now()).slice(-6);
 
-  const icerik=el('teslim-icerik');
-  icerik.innerHTML=`
-    <div style="text-align:center;padding:8px 0;border-bottom:2px solid #1E2D6B;margin-bottom:10px">
-      <div style="font-size:13px;font-weight:700;color:#1E2D6B">Ekosa Çevre Çözümleri</div>
-      <div style="font-size:11px;color:#444">Gıda Hay.San.Tic.Ltd.Şti</div>
-      <div style="font-size:10px;color:#666">Aktoprak Mücavir Mevkii Karadeniz Sk.132 A Blok</div>
-      <div style="font-size:10px;color:#666">No1-2 Dinar/Afyonkarahisar | 0549 155 03 00</div>
-      <div style="font-size:10px;color:#666">Dinar V.D 329 231 73 30 | www.ekosacevre.com</div>
-      <div style="font-size:10px;color:#666">LİSANS: 1244234</div>
-    </div>
-    <div style="text-align:center;font-size:13px;font-weight:700;color:#1E2D6B;margin-bottom:10px">
-      Bitkisel Atık Yağ Teslim Fişi
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-      <span style="color:#666">Tarih:</span><span style="font-weight:600">${z.tarih}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-      <span style="color:#666">İşletme:</span><span style="font-weight:600;text-align:right;max-width:60%">${m.isim}</span>
-    </div>
-    <div style="border-top:1px solid #ddd;border-bottom:1px solid #ddd;padding:8px 0;margin-bottom:8px">
-      <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;font-size:11px;font-weight:700;color:#666;margin-bottom:4px">
-        <span>Açıklama</span><span>Miktar</span><span>Fiyat</span><span>Tutar</span>
+  el('teslim-icerik').innerHTML=`
+    <div style="font-family:-apple-system,sans-serif;max-width:340px;margin:0 auto;border:2px solid #1E2D6B;border-radius:12px;overflow:hidden">
+      <!-- Başlık -->
+      <div style="background:linear-gradient(135deg,#1E2D6B,#162255);padding:16px;text-align:center">
+        <img src="data:image/jpeg;base64,${logo_b64}" style="height:50px;object-fit:contain;filter:brightness(0) invert(1);margin-bottom:8px">
+        <div style="color:#7AB929;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase">Bitkisel Atık Yağ</div>
+        <div style="color:#fff;font-size:16px;font-weight:700;margin-top:2px">Teslim Fişi</div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;font-size:12px">
-        <span>Bitkisel Atık Yağ</span>
-        <span>${kg} kg</span>
-        <span>${fiyat>0?fiyat.toFixed(2)+' ₺':'-'}</span>
-        <span style="font-weight:600">${net>0?net.toFixed(2)+' ₺':'-'}</span>
+      <!-- Fiş No & Tarih -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;background:#f8f9fa;padding:10px 14px;border-bottom:1px solid #e5e5e5">
+        <div>
+          <div style="font-size:9px;color:#999;font-weight:700;text-transform:uppercase">Fiş No</div>
+          <div style="font-size:13px;font-weight:700;color:#1E2D6B">${fisNo}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:9px;color:#999;font-weight:700;text-transform:uppercase">Tarih</div>
+          <div style="font-size:13px;font-weight:700;color:#1E2D6B">${z.tarih}</div>
+        </div>
       </div>
-    </div>
-    <div style="text-align:right;font-size:12px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:2px">
-        <span style="color:#666">Net:</span><span>${net.toFixed(2)} ₺</span>
+      <!-- İşletme -->
+      <div style="padding:12px 14px;border-bottom:1px solid #f0f0f0;background:#fff">
+        <div style="font-size:9px;color:#999;font-weight:700;text-transform:uppercase;margin-bottom:3px">İşletme</div>
+        <div style="font-size:15px;font-weight:700;color:#222">${m.isim}</div>
+        <div style="font-size:12px;color:#666;margin-top:2px">${m.il||''}${m.bolge?' / '+m.bolge:''}</div>
       </div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:2px">
-        <span style="color:#666">KDV (${kdvOran}):</span><span>${kdv.toFixed(2)} ₺</span>
+      <!-- Ürün Detay -->
+      <div style="padding:12px 14px;background:#fff">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:4px;font-size:10px;font-weight:700;color:#999;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #f0f0f0">
+          <span>Açıklama</span><span style="text-align:center">Miktar</span><span style="text-align:center">Birim</span><span style="text-align:right">Tutar</span>
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:4px;font-size:13px;align-items:center">
+          <span style="font-weight:600;color:#222">Bitkisel Atık Yağ</span>
+          <span style="text-align:center;font-weight:600">${kg} kg</span>
+          <span style="text-align:center;color:#666">${fiyat>0?fiyat.toFixed(2)+'₺':'-'}</span>
+          <span style="text-align:right;font-weight:700;color:#1E2D6B">${net>0?net.toFixed(2)+'₺':'-'}</span>
+        </div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-weight:700;font-size:13px;border-top:1px solid #ddd;padding-top:4px">
-        <span>Toplam:</span><span style="color:#1E2D6B">${toplam.toFixed(2)} ₺</span>
+      <!-- Toplam -->
+      <div style="background:#f8f9fa;padding:10px 14px;border-top:2px dashed #e0e0e0">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#666;margin-bottom:3px">
+          <span>Net Tutar</span><span>${net.toFixed(2)} ₺</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#666;margin-bottom:6px">
+          <span>KDV (${kdvOran})</span><span>${kdv.toFixed(2)} ₺</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;color:#1E2D6B;padding-top:6px;border-top:1px solid #ddd">
+          <span>TOPLAM</span><span>${toplam.toFixed(2)} ₺</span>
+        </div>
       </div>
-    </div>
-    <div style="margin-top:10px;padding:8px;background:#f8f8f8;border-radius:6px;font-size:10px;color:#555;line-height:1.6">
-      İşbu fiş ile tarafınıza; 06/06/2015 tarihli Bitkisel Atık Yağların Kontrolü Yönetmeliği kapsamında bitkisel atık yağlarınız için MoTAT (Mobil Atık Takip Sistemi) üzerinden atık gönderim kaydı açmanızın zorunlu olduğu bildirilmiştir. Bu yükümlülüğün yerine getirilmemesinden doğacak her türlü idari ve hukuki sorumluluk işletmenize aittir.
-    </div>
-    <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:20px;text-align:center;font-size:11px">
-      <div>
-        <div style="border-top:1px solid #333;margin-top:30px;padding-top:4px">Teslim Eden</div>
+      <!-- İmza -->
+      <div style="padding:14px;background:#fff;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div style="text-align:center">
+          <div style="border-top:1px solid #333;padding-top:6px;margin-top:30px">
+            <div style="font-size:10px;color:#666">Teslim Eden</div>
+            <div style="font-size:11px;font-weight:600;color:#1E2D6B;margin-top:2px">${z.personel||''}</div>
+          </div>
+        </div>
+        <div style="text-align:center">
+          <div style="border-top:1px solid #333;padding-top:6px;margin-top:30px">
+            <div style="font-size:10px;color:#666">Teslim Alan</div>
+            <div style="font-size:11px;color:#999;margin-top:2px">(İmza)</div>
+          </div>
+        </div>
       </div>
-      <div>
-        <div style="border-top:1px solid #333;margin-top:30px;padding-top:4px">Teslim Alan</div>
+      <!-- Alt Bilgi -->
+      <div style="background:#1E2D6B;padding:10px 14px">
+        <div style="font-size:9px;color:rgba(255,255,255,.7);line-height:1.6;text-align:center">
+          06/06/2015 tarihli Bitkisel Atık Yağların Kontrolü Yönetmeliği kapsamında MoTAT üzerinden atık gönderim kaydı açmak işletmenizin yükümlülüğündedir.
+        </div>
+        <div style="text-align:center;margin-top:6px">
+          <span style="font-size:9px;color:#7AB929;font-weight:600">LİSANS: 1244234</span>
+          <span style="font-size:9px;color:rgba(255,255,255,.5);margin:0 6px">|</span>
+          <span style="font-size:9px;color:rgba(255,255,255,.7)">www.ekosacevre.com</span>
+        </div>
       </div>
     </div>`;
   mAc('teslim-m');
@@ -1796,40 +1820,80 @@ function teslimFisiYazdir(){
   const net=kg*fiyat;
   const kdv=z.odemeTuru==='Faturalı'?net*0.20:0;
   const toplam=net+kdv;
+  const kdvOran=z.odemeTuru==='Faturalı'?'%20':'%0';
   const W=mkbYaziciW===58?32:48;
+
+  // Hizalama yardımcıları
+  const sol=(s,n)=>String(s).substring(0,n).padEnd(n);
+  const sag=(s,n)=>String(s).substring(0,n).padStart(n);
+  const orta=(s)=>{const b=Math.max(0,Math.floor((W-s.length)/2));return ' '.repeat(b)+s;};
   const C='='.repeat(W);
   const K='-'.repeat(W);
-  const orta=(s)=>{const b=Math.max(0,Math.floor((W-s.length)/2));return ' '.repeat(b)+s;};
+  const trCevir=(s)=>s.replace(/İ/g,'I').replace(/ı/g,'i').replace(/Ğ/g,'G').replace(/ğ/g,'g').replace(/Ü/g,'U').replace(/ü/g,'u').replace(/Ş/g,'S').replace(/ş/g,'s').replace(/Ö/g,'O').replace(/ö/g,'o').replace(/Ç/g,'C').replace(/ç/g,'c');
+
+  const fisNo='F-'+String(Date.now()).slice(-5);
   const satirlar=[
+    '',
+    C,
     orta('EKOSA CEVRE COZUMLERI'),
     orta('Gida Hay.San.Tic.Ltd.Sti'),
-    orta('Dinar/Afyonkarahisar'),
+    orta('Dinar / Afyonkarahisar'),
     orta('VKN: 3292317330'),
-    orta('LISANS: 1244234'),
+    orta('Lisans: 1244234'),
     C,
-    orta('BITKISEL ATIK YAG TESLIM FISI'),
+    orta('BITKISEL ATIK YAG'),
+    orta('TESLIM FISI'),
     C,
-    'Tarih    : '+z.tarih,
-    'Isletme  : '+m.isim.substring(0,W-11),
+    ' Tarih : '+z.tarih+sag(fisNo, W-10-z.tarih.length),
     K,
-    'Urun     : Bitkisel Atik Yag',
-    'Miktar   : '+kg+' kg',
-    'Birim    : '+(fiyat>0?fiyat.toFixed(2)+' TL/kg':'-'),
+    ' '+trCevir(m.isim).substring(0,W-2),
+    ' '+trCevir(m.il||'').substring(0,W-2),
     K,
-    'Net      : '+net.toFixed(2)+' TL',
-    'KDV      : '+kdv.toFixed(2)+' TL',
-    'TOPLAM   : '+toplam.toFixed(2)+' TL',
-    C,
-    'MoTAT kaydi yukumlu teslim',
-    'eden isletmeye aittir.',
-    C,
-    '',
-    'Teslim Eden    Teslim Alan',
-    '',
-    '',
-    '_____________  _____________',
-    '',''
   ];
+
+  // Ürün satırı hizalamalı
+  const aciklamaW=W-14;
+  satirlar.push(' '+sol('Aciklama',aciklamaW)+sag('Miktar',7)+'  '+'Fiyat');
+  satirlar.push(K);
+  const urunAdi='Bitkisel Atik Yag';
+  const miktarStr=kg+' kg';
+  const fiyatStr=fiyat>0?fiyat.toFixed(2):'  -  ';
+  satirlar.push(' '+sol(urunAdi,aciklamaW)+sag(miktarStr,7)+'  '+fiyatStr);
+  satirlar.push(K);
+
+  // Tutarlar - sağa hizalı
+  const etiketW=Math.floor(W*0.55);
+  const degerW=W-etiketW-1;
+  satirlar.push(' '+sol('Net Tutar :',etiketW)+sag(net.toFixed(2)+' TL',degerW));
+  satirlar.push(' '+sol('KDV ('+kdvOran+') :',etiketW)+sag(kdv.toFixed(2)+' TL',degerW));
+  satirlar.push(K);
+  satirlar.push(' '+sol('TOPLAM :',etiketW)+sag(toplam.toFixed(2)+' TL',degerW));
+  satirlar.push(C);
+
+  // İmza
+  const imzaW=Math.floor((W-3)/2);
+  satirlar.push('');
+  satirlar.push(' '+sol('Teslim Eden',imzaW)+'   '+'Teslim Alan');
+  satirlar.push('');
+  satirlar.push('');
+  satirlar.push('');
+  satirlar.push(' '+'_'.repeat(imzaW-1)+'   '+'_'.repeat(imzaW-1));
+  if(z.personel)satirlar.push(' '+trCevir(z.personel).substring(0,imzaW-1));
+  satirlar.push('');
+  satirlar.push(K);
+
+  // MoTAT uyarısı - kelime kelime sar
+  const uyari='Isbu fis ile tarafiniza; 06/06/2015 tarihli Bitkisel Atik Yaglarin Kontrolu Yonetmeligi kapsaminda bitkisel atik yaglariniz icin MoTAT (Mobil Atik Takip Sistemi) uzerinden atik gonderim kaydi acmanizin zorunlu oldugu bildirilmistir. Bu yukumlulugun yerine getirilmemesinden dogacak her turlu idari ve hukuki sorumluluk isletmenize aittir.';
+  let satir='';
+  uyari.split(' ').forEach(k=>{
+    if((satir+' '+k).trim().length<=W-1){satir=(satir+' '+k).trim();}
+    else{satirlar.push(' '+satir);satir=k;}
+  });
+  if(satir)satirlar.push(' '+satir);
+  satirlar.push(C);
+  satirlar.push('');
+  satirlar.push('');
+
   const t=satirlar.join('\n');
   const dosya=new File([t],'teslim_fisi.txt',{type:'text/plain'});
   if(navigator.share){navigator.share({files:[dosya],title:'Teslim Fisi'}).catch(()=>teslimFisiIndir(t));}
@@ -1923,6 +1987,15 @@ function smkbYazdir(){
     const kisiler=JSON.parse(localStorage.getItem(cacheKey)||'[]');
     if(!kisiler.find(k=>k.tc===tc)){kisiler.unshift({ad,tc});localStorage.setItem(cacheKey,JSON.stringify(kisiler));}
     shG('addMakbuzKisi',{musteriId:sMstSon.id,musteriAdi:sMstSon.isim,ad,tc});
+    // Ödenen tutarı ziyaret kaydına bağla - BH raporunda kullanmak için
+    if(sonKaydedilenZ){
+      const zvIdx=zvr.findIndex(x=>String(x.id)===String(sonKaydedilenZ.id));
+      if(zvIdx!==-1){
+        zvr[zvIdx].odenenMakbuzTutar=parseFloat(mk)||0;
+        zvr[zvIdx].makbuzNo=no;
+        localStorage.setItem('z',JSON.stringify(zvr));
+      }
+    }
   }
   
   // Sheets'e kaydet
@@ -1996,22 +2069,26 @@ function yakitKartKopyalaAc(){
 
 //=== BİZİMHESAP GÜNLÜK RAPORU ===
 function bhRaporGoster(){
-  // Tarih seçimi
   const bhTarihInput=el('bh-sec-tarih');
   let bugun=bug();
   if(bhTarihInput&&bhTarihInput.value){
     const [y,m2,g]=bhTarihInput.value.split('-');
     bugun=g+'.'+m2+'.'+y;
   }
-  const bk=zvr.filter(z=>{
+  const bk=zvr.filter(function(z){
     const zt=z.tarih&&z.tarih.includes('T')?ft2(z.tarih):z.tarih;
     return zt===bugun&&(z.islem==='Alım Yapıldı'||z.islem==='Alim Yapildi');
   });
-  if(!bk.length){dm('Bugün alım kaydı yok','err');return;}
-  el('bh-tarih').textContent=bugun+" tarihli alimlar";
+  if(!bk.length){dm('Bu tarihte alım kaydı yok','err');return;}
+  el('bh-tarih').textContent=bugun+' - Bizimhesap Alis Raporu';
+
+  const odenenler=bk.filter(function(z){return !z.odemeDurum||z.odemeDurum==='yapildi'||z.odemeDurum==='Yapıldı';});
+  const bekleyenler=bk.filter(function(z){return z.odemeDurum==='bekliyor'||z.odemeDurum==='Bekliyor';});
+
   const satirlar=[];
   let topKg=0,topTutar=0;
-  bk.forEach(function(z,i){
+
+  function formatSatir(z,i,prefix){
     const m=mst.find(function(x){return String(x.id)===String(z.musteriId);});
     const fiyat=z.odemeTuru==='Nakit'?(m?parseFloat(m.nakitFiyat)||0:0):
                  z.odemeTuru==='Yakıt Kartı'?(m?parseFloat(m.yakitFiyat)||0:0):
@@ -2019,25 +2096,70 @@ function bhRaporGoster(){
     const kg=parseFloat(z.kg)||0;
     const net=kg*fiyat;
     const kdv=z.odemeTuru==='Faturalı'?net*0.20:0;
-    const toplam=net+kdv;
-    topKg+=kg;topTutar+=toplam;
-    satirlar.push((i+1)+'. '+z.musteriAdi);
-    satirlar.push('   Il: '+(z.il||''));
-    satirlar.push('   Miktar: '+kg+' kg');
-    satirlar.push('   Birim: '+(fiyat>0?fiyat.toFixed(2)+' TL/kg':'Fiyat girilmemis'));
-    satirlar.push('   Odeme: '+z.odemeTuru+(z.tutar?' | Tutar: '+parseFloat(z.tutar).toFixed(2)+' TL':''));
-    if(z.odemeTuru==='Yakıt Kartı'&&m&&m.yakitKartNo)satirlar.push('   Kart No: '+m.yakitKartNo);
-    satirlar.push('   Net: '+net.toFixed(2)+' TL | KDV: '+kdv.toFixed(2)+' TL | Toplam: '+toplam.toFixed(2)+' TL');
+    const hesaplananToplam=net+kdv;
+    // Personelin gerçekte ödediği tutar
+    const odenenTutar=parseFloat(z.tutar)||0;
+    const gosterilecekTutar=odenenTutar>0?odenenTutar:hesaplananToplam;
+    const fark=odenenTutar>0?odenenTutar-hesaplananToplam:0;
+    topKg+=kg; // topTutar aşağıda makbuz tutarıyla hesaplanıyor
+    satirlar.push(prefix+(i+1)+'. '+z.musteriAdi+' ('+z.il+')');
+    satirlar.push('   Miktar  : '+kg+' kg');
+    satirlar.push('   Odeme   : '+z.odemeTuru);
+    if(z.odemeTuru==='Yakıt Kartı'&&m&&m.yakitKartNo)satirlar.push('   Kart No : '+m.yakitKartNo);
+    satirlar.push('   Birim   : '+(fiyat>0?fiyat.toFixed(2)+' TL/kg':'!!! Fiyat girilmemis'));
+    if(net>0)satirlar.push('   Net     : '+net.toFixed(2)+' TL');
+    if(kdv>0)satirlar.push('   KDV     : '+kdv.toFixed(2)+' TL');
+    // Makbuz tutarı (personelin gerçekte ödediği) veya hesaplanan
+    const makbuzTutar=parseFloat(z.odenenMakbuzTutar)||0;
+    const gosterilecek=makbuzTutar>0?makbuzTutar:(odenenTutar>0?odenenTutar:hesaplananToplam);
+    const farkMkb=gosterilecek-hesaplananToplam;
+    topTutar+=gosterilecek;
+    if(hesaplananToplam>0){
+      satirlar.push('   Hesaplanan : '+hesaplananToplam.toFixed(2)+' TL');
+    }
+    if(makbuzTutar>0){
+      satirlar.push('   MAKBUZ    : '+makbuzTutar.toFixed(2)+' TL  << Odenen');
+      if(Math.abs(farkMkb)>0.01)satirlar.push('   Fark      : '+(farkMkb>0?'+':'')+farkMkb.toFixed(2)+' TL '+(farkMkb>0?'(fazla)':'(eksik)'));
+      if(z.makbuzNo)satirlar.push('   Mkb No    : '+z.makbuzNo);
+    } else if(odenenTutar>0){
+      satirlar.push('   ODENEN    : '+odenenTutar.toFixed(2)+' TL');
+    } else {
+      satirlar.push('   TUTAR     : '+hesaplananToplam.toFixed(2)+' TL'+(fiyat===0?' !! Fiyat girilmemis':''));
+    }
     satirlar.push('   Personel: '+(z.personel||''));
-    satirlar.push('-------------------------------');
-  });
+    satirlar.push('- - - - - - - - - - - - - -');
+  }
+
+  if(odenenler.length){
+    satirlar.push('============================');
+    satirlar.push('  ODEME YAPILAN ALIMLAR: '+odenenler.length);
+    satirlar.push("  >> Bizimhesap'a girin <<");
+    satirlar.push('============================');
+    odenenler.forEach(function(z,i){formatSatir(z,i,'');});
+  }
+
+  if(bekleyenler.length){
+    satirlar.push('');
+    satirlar.push('============================');
+    satirlar.push('!!! ODEME BEKLEYEN: '+bekleyenler.length);
+    satirlar.push("!!! Bizimhesap'a GIRME !!!");
+    satirlar.push("!!! Odeme yapildiktan sonra");
+    satirlar.push("!!! tekrar kontrol et");
+    satirlar.push('============================');
+    bekleyenler.forEach(function(z,i){formatSatir(z,i,'[BEKLIYOR] ');});
+  }
+
   satirlar.push('');
-  satirlar.push('TOPLAM: '+topKg.toFixed(0)+' kg | '+topTutar.toFixed(2)+' TL');
-  satirlar.push('Alim Sayisi: '+bk.length);
+  satirlar.push('============================');
+  satirlar.push('TOPLAM    : '+topKg.toFixed(0)+' kg');
+  satirlar.push('TUTAR     : '+topTutar.toFixed(2)+' TL');
+  satirlar.push('Odenen    : '+odenenler.length+' isletme');
+  satirlar.push('Bekleyen  : '+bekleyenler.length+' isletme');
+  satirlar.push('============================');
+
   el('bh-icerik').textContent=satirlar.join('\n');
   mAc('bh-m');
 }
-
 function bhKopyala(){
   const metin=el('bh-icerik').textContent;
   navigator.clipboard.writeText(metin).then(()=>dm('✓ Kopyalandı','ok')).catch(()=>{
