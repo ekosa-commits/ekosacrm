@@ -1851,23 +1851,29 @@ function teslimFisiYazdir(){
     K,
   ];
 
-  // Ürün satırı hizalamalı
-  const aciklamaW=W-14;
-  satirlar.push(' '+sol('Aciklama',aciklamaW)+sag('Miktar',7)+'  '+'Fiyat');
-  satirlar.push(K);
-  const urunAdi='Bitkisel Atik Yag';
+  // Ürün satırı - basit, taşma olmadan
+  // 80mm=48 kar: "Bitkisel Atik Yag  55 kg  45.00"
+  // 58mm=32 kar: "Atik Yag  55kg  45.00"
+  const urunAdi=W>=40?'Bitkisel Atik Yag':'Atik Yag';
   const miktarStr=kg+' kg';
-  const fiyatStr=fiyat>0?fiyat.toFixed(2):'  -  ';
-  satirlar.push(' '+sol(urunAdi,aciklamaW)+sag(miktarStr,7)+'  '+fiyatStr);
+  const fiyatStr=fiyat>0?fiyat.toFixed(2)+' TL/kg':'  -';
+  // Sütun genişlikleri: urun=sabit, miktar=7, fiyat=kalan
+  const fiyatW=W>=40?10:9;
+  const miktarW=7;
+  const urunW=W-miktarW-fiyatW-3; // 3=boşluklar
+  satirlar.push(K);
+  satirlar.push(' '+sol('Aciklama',urunW)+'  '+sol('Miktar',miktarW)+'  '+sag('Fiyat',fiyatW-2));
+  satirlar.push(K);
+  satirlar.push(' '+sol(urunAdi,urunW)+'  '+sol(miktarStr,miktarW)+'  '+sag(fiyat>0?fiyat.toFixed(2):'  -',fiyatW-2));
   satirlar.push(K);
 
-  // Tutarlar - sağa hizalı
-  const etiketW=Math.floor(W*0.55);
-  const degerW=W-etiketW-1;
-  satirlar.push(' '+sol('Net Tutar :',etiketW)+sag(net.toFixed(2)+' TL',degerW));
-  satirlar.push(' '+sol('KDV ('+kdvOran+') :',etiketW)+sag(kdv.toFixed(2)+' TL',degerW));
+  // Tutarlar - iki sütun: etiket sola, değer sağa
+  const etiketW=W>=40?14:12;
+  const degerW=W-etiketW-2;
+  satirlar.push(' '+sol('Net Tutar',etiketW)+' '+sag(net.toFixed(2)+' TL',degerW));
+  satirlar.push(' '+sol('KDV ('+kdvOran+')',etiketW)+' '+sag(kdv.toFixed(2)+' TL',degerW));
   satirlar.push(K);
-  satirlar.push(' '+sol('TOPLAM :',etiketW)+sag(toplam.toFixed(2)+' TL',degerW));
+  satirlar.push(' '+sol('TOPLAM',etiketW)+' '+sag(toplam.toFixed(2)+' TL',degerW));
   satirlar.push(C);
 
   // İmza
