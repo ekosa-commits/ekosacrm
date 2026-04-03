@@ -297,25 +297,34 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     <canvas id="haftalik-grafik" height="120" style="width:100%"></canvas>
   </div>
   <div class="card"><div class="ct">👤 Personel Performansı</div><div id="per-perf"><div class="bos">Yükleniyor...</div></div></div>
-  <button class="btn btn-gri" onclick="excelIndir()" style="margin-bottom:8px">📥 Bu Ayı Excel'e Aktar</button>
-  <!-- Sadece ödeme kaydı -->
-  <div class="card" style="margin-bottom:8px">
-    <div class="ct">💰 Sadece Ödeme Kaydı</div>
-    <div style="font-size:12px;color:var(--gri);margin-bottom:8px">Alım yapmadan ödeme (geçmiş borç, avans vb.)</div>
-    <div class="aw"><span class="ai">⌕</span><input type="text" id="sod-ara" placeholder="İşletme ara..." oninput="sodAra(this.value)" autocomplete="off"></div>
-    <div id="sod-sonuc" style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;display:none;margin-bottom:6px"></div>
-    <div id="sod-secili" style="display:none;background:var(--lac-a);border-radius:8px;padding:8px 12px;margin-bottom:8px">
-      <div style="font-size:13px;font-weight:700;color:var(--lac)" id="sod-isletme-ad">—</div>
-      <div style="font-size:11px;color:var(--gri)" id="sod-isletme-il">—</div>
+  <!-- Alım Özeti -->
+  <div class="card">
+    <div class="ct">📊 Alım Özeti</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <button class="fb on" onclick="raporSure('bugun',this)" style="flex:1;text-align:center">Bugün</button>
+      <button class="fb" onclick="raporSure('hafta',this)" style="flex:1;text-align:center">Bu Hafta</button>
+      <button class="fb" onclick="raporSure('ay',this)" style="flex:1;text-align:center">Bu Ay</button>
     </div>
-    <input type="hidden" id="sod-isletme">
-    <input type="hidden" id="sod-il">
-    <div class="fg"><label>Ödeme Miktarı (₺) *</label><input type="number" id="sod-tutar" placeholder="0.00" inputmode="decimal"></div>
-    <div class="fg" style="margin-bottom:0"><label>Açıklama</label><input type="text" id="sod-aciklama" placeholder="Geçmiş borç, avans..."></div>
-    <button class="btn btn-lac" onclick="sadecOdemeKaydet()" style="margin-top:10px">💾 Kaydet</button>
+    <div id="alim-ozet"><div class="bos">Yükleniyor...</div></div>
   </div>
+  <!-- Son 7 Gün Grafiği -->
+  <div class="card">
+    <div class="ct">📈 Son 7 Günlük Alım (kg)</div>
+    <canvas id="haftalik-grafik" height="120" style="width:100%"></canvas>
+  </div>
+  <!-- Personel Performans -->
+  <div class="card">
+    <div class="ct">👤 Personel Performansı (Bu Ay)</div>
+    <div id="per-perf"><div class="bos">Yükleniyor...</div></div>
+  </div>
+  <!-- Teklif Hunisi -->
+  <div class="card" id="teklif-huni-kart">
+    <div class="ct">🎯 Teklif Hunisi</div>
+    <div id="teklif-huni"></div>
+  </div>
+  <button class="btn btn-gri" onclick="excelIndir()" style="margin-bottom:8px">📥 Bu Ayı Excel'e Aktar</button>
   <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-    <input type="date" id="bh-sec-tarih" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">
+    <input type="date" id="bh-sec-tarih" style="flex:1;padding:10px;border:1.5px solid #e2e2e2;border-radius:8px;font-size:14px">
     <button class="btn btn-gri" onclick="bhRaporGoster()" style="white-space:nowrap;padding:10px 14px">📊 BH Raporu</button>
   </div>
 </div>
@@ -2352,6 +2361,54 @@ function sadecOdemeKaydet(){
   el('sod-ara').value='';el('sod-secili').style.display='none';el('sod-sonuc').style.display='none';
   dm('✓ Ödeme kaydı eklendi — '+isletme,'ok');
 }
+
+
+//=== MAKBUZ LİSTE & DÜZENLE ===
+let mkbListesi=[];
+
+async function mkbListeYukle(){
+  const liste=el('mkb-liste');
+  if(!liste)return;
+  liste.innerHTML='<div class="bos">Yükleniyor...</div>';
+  try{
+    const r=await fetch(SURL+'?action=getMakbuzlar&token='+_T,{redirect:'follow'});
+    const txt=await r.text();
+    let d;
+    try{d=JSON.parse(txt);}catch(pe){
+      liste.innerHTML='<div class="bos" style="color:var(--kir)">Sunucu yanıt hatası</div>';
+      return;
+    }
+    mkbListesi=d.makbuzlar||[];
+    if(!mkbListesi.length){
+      liste.innerHTML='<div class="bos">Henüz makbuz yok</div>';
+      return;
+    }
+    mkbListeGoster();
+  }catch(e){
+    liste.innerHTML='<div class="bos" style="color:var(--kir)">⚠ Bağlantı yok</div>';
+  }
+}
+
+function mkbListeGoster(){
+  const liste=el('mkb-liste');
+  if(!liste||!mkbListesi.length)return;
+  liste.innerHTML=mkbListesi.slice(0,30).map(m=>`
+    <div style="padding:10px 0;border-bottom:1px solid #f5f5f5">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:#222">${m.adSoyad}</div>
+          <div style="font-size:11px;color:var(--gri)">${m.makbuzNo} · ${m.tarih} · ${m.isletme||''}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--lac);margin-top:2px">${parseFloat(m.miktar||0).toFixed(2)} ₺</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;margin-left:8px">
+          <button onclick="mkbDuzAc('${m.id}')" style="background:var(--lac-a);color:var(--lac);border:none;padding:5px 9px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">✏️</button>
+          <button onclick="mkbdIptalDirekt('${m.id}')" style="background:var(--kir-a);color:var(--kir);border:none;padding:5px 9px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">🗑</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+//=== RAPOR GRAFİK & ÖZET ===
 
 function bhKopyala(){
   const metin=el('bh-icerik').textContent;
