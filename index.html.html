@@ -285,6 +285,22 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
   </div>
   <div class="card"><div class="ct">👤 Personel Performansı</div><div id="per-perf"><div class="bos">Yükleniyor...</div></div></div>
   <button class="btn btn-gri" onclick="excelIndir()" style="margin-bottom:8px">📥 Bu Ayı Excel'e Aktar</button>
+  <!-- Sadece ödeme kaydı -->
+  <div class="card" style="margin-bottom:8px">
+    <div class="ct">💰 Sadece Ödeme Kaydı</div>
+    <div style="font-size:12px;color:var(--gri);margin-bottom:8px">Alım yapmadan ödeme (geçmiş borç, avans vb.)</div>
+    <div class="aw"><span class="ai">⌕</span><input type="text" id="sod-ara" placeholder="İşletme ara..." oninput="sodAra(this.value)" autocomplete="off"></div>
+    <div id="sod-sonuc" style="max-height:160px;overflow-y:auto;border:1px solid #f0f0f0;border-radius:8px;display:none;margin-bottom:6px"></div>
+    <div id="sod-secili" style="display:none;background:var(--lac-a);border-radius:8px;padding:8px 12px;margin-bottom:8px">
+      <div style="font-size:13px;font-weight:700;color:var(--lac)" id="sod-isletme-ad">—</div>
+      <div style="font-size:11px;color:var(--gri)" id="sod-isletme-il">—</div>
+    </div>
+    <input type="hidden" id="sod-isletme">
+    <input type="hidden" id="sod-il">
+    <div class="fg"><label>Ödeme Miktarı (₺) *</label><input type="number" id="sod-tutar" placeholder="0.00" inputmode="decimal"></div>
+    <div class="fg" style="margin-bottom:0"><label>Açıklama</label><input type="text" id="sod-aciklama" placeholder="Geçmiş borç, avans..."></div>
+    <button class="btn btn-lac" onclick="sadecOdemeKaydet()" style="margin-top:10px">💾 Kaydet</button>
+  </div>
   <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
     <input type="date" id="bh-sec-tarih" style="flex:1;padding:10px;border:1.5px solid #e2e2e2;border-radius:8px;font-size:14px">
     <button class="btn btn-gri" onclick="bhRaporGoster()" style="white-space:nowrap;padding:10px 14px">📊 BH Raporu</button>
@@ -479,16 +495,6 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
   <button class="btn btn-gri" onclick="mkbOnizle()" style="margin-bottom:8px">👁 Önizle</button>
   <button class="btn btn-gri" onclick="mkbTemizle()">Formu Temizle</button>
   <div style="height:16px"></div>
-  <!-- Sadece ödeme kaydı -->
-  <div class="card">
-    <div class="ct">💰 Sadece Ödeme Kaydı</div>
-    <div style="font-size:12px;color:var(--gri);margin-bottom:10px">Alım yapmadan ödeme yaptıysanız buradan kaydedin</div>
-    <div class="fg"><label>İşletme Adı *</label><input type="text" id="sod-isletme" placeholder="İşletme adı..."></div>
-    <div class="fg"><label>İl</label><input type="text" id="sod-il" placeholder="İl..."></div>
-    <div class="fg"><label>Ödeme Miktarı (₺) *</label><input type="number" id="sod-tutar" placeholder="0.00" inputmode="decimal"></div>
-    <div class="fg" style="margin-bottom:0"><label>Açıklama</label><input type="text" id="sod-aciklama" placeholder="Geçmiş borç, avans..."></div>
-    <button class="btn btn-lac" onclick="sadecOdemeKaydet()" style="margin-top:10px">💾 Ödeme Kaydını Kaydet</button>
-  </div>
   <div style="height:8px"></div>
 </div>
 
@@ -1098,7 +1104,9 @@ async function zvKaydet(){
   if(!sMst){dm('Önce işletme seçin!','err');return;}
   if(!otr){dm('Giriş yapın!','err');return;}
   if(sIslem==='alindi'&&!el('skg').value){dm('Kg miktarını girin!','err');return;}
-  const z={id:Date.now(),tarih:bug(),saat:saat(),musteriId:sMst.id,musteriAdi:sMst.isim,il:sMst.il,personel:otr.adSoyad||otr.kullaniciAdi,islem:sIslem==='alindi'?'Alım Yapıldı':'Alım Yapılmadı',kg:sIslem==='alindi'?el('skg').value:'',odemeTuru:sIslem==='alindi'?sOdeme:'',tutar:sIslem==='alindi'?el('stu').value:'',doluluk:sIslem==='alinmadi'?sDol:'',notlar:el('snot').value,odemeDurum:sIslem==='alindi'?sOdemeDurum:'Yapıldı'};
+  const z={id:Date.now(),tarih:bug(),saat:saat(),musteriId:sMst.id,musteriAdi:sMst.isim,il:sMst.il,personel:otr.adSoyad||otr.kullaniciAdi,islem:sIslem==='alindi'?'Alım Yapıldı':'Alım Yapılmadı',kg:sIslem==='alindi'?el('skg').value:'',odemeTuru:sIslem==='alindi'?sOdeme:'',tutar:sIslem==='alindi'?el('stu').value:'',
+    birimFiyat:sIslem==='alindi'?(sOdeme==='Nakit'?parseFloat(sMst.nakitFiyat)||0:sOdeme==='Yakıt Kartı'?parseFloat(sMst.yakitFiyat)||0:parseFloat(sMst.faturaliFiyat)||0):0,
+    doluluk:sIslem==='alinmadi'?sDol:'',notlar:el('snot').value,odemeDurum:sIslem==='alindi'?sOdemeDurum:'Yapıldı'};
   if(duzZiyaretId){
     // Güncelleme modu - eski kaydı bul ve üzerine yaz
     const duzIdx=zvr.findIndex(x=>String(x.id)===String(duzZiyaretId));
@@ -1536,9 +1544,15 @@ function alimOzetRender(){
   let topMaliyet=0,maliyetliKg=0;
   zFilt.forEach(z=>{
     const kg2=parseFloat(z.kg)||0;
-    const tutar=parseFloat(z.tutar)||0;
-    if(tutar>0&&kg2>0){
-      const gercek=z.odemeTuru==='Nakit'?tutar:tutar/1.20;
+    const m2=mst.find(x=>String(x.id)===String(z.musteriId));
+    // birimFiyat varsa kullan, yoksa cariden al
+    const bf=parseFloat(z.birimFiyat)||0||
+             (z.odemeTuru==='Nakit'?(m2?parseFloat(m2.nakitFiyat)||0:0):
+              z.odemeTuru==='Yakıt Kartı'?(m2?parseFloat(m2.yakitFiyat)||0:0):
+              (m2?parseFloat(m2.faturaliFiyat)||0:0));
+    if(bf>0&&kg2>0){
+      const toplam2=kg2*bf;
+      const gercek=z.odemeTuru==='Faturalı'?toplam2/1.20:toplam2;
       topMaliyet+=gercek;maliyetliKg+=kg2;
     }
   });
@@ -2280,10 +2294,34 @@ function bhRaporGoster(){
   mAc('bh-m');
 }
 
+function sodAra(v){
+  const r=el('sod-sonuc');
+  if(!v||v.length<1){r.style.display='none';return;}
+  const n=nrm(v);
+  const E=mst.filter(m=>m.aktif!==false&&(nrm(m.isim).includes(n)||nrm(m.il||'').includes(n))).slice(0,8);
+  if(!E.length){r.innerHTML='<div style="padding:10px;font-size:12px;color:var(--gri)">Bulunamadı</div>';r.style.display='block';return;}
+  r.innerHTML=E.map(m=>`<div class="sai" onclick="sodSec(${m.id})">
+    <div class="sn">${m.isim}</div>
+    <div class="sa">${m.il||''}${m.bolge?' · '+m.bolge:''}</div>
+  </div>`).join('');
+  r.style.display='block';
+}
+
+function sodSec(id){
+  const m=mst.find(x=>x.id===id);if(!m)return;
+  el('sod-ara').value=m.isim;
+  el('sod-isletme').value=m.isim;
+  el('sod-il').value=m.il||'';
+  el('sod-isletme-ad').textContent=m.isim;
+  el('sod-isletme-il').textContent=m.il||'';
+  el('sod-secili').style.display='block';
+  el('sod-sonuc').style.display='none';
+}
+
 function sadecOdemeKaydet(){
   const isletme=el('sod-isletme').value.trim();
   const tutar=parseFloat(el('sod-tutar').value)||0;
-  if(!isletme){dm('İşletme adı girin!','err');return;}
+  if(!isletme){dm('Önce işletme seçin!','err');el('sod-ara').focus();return;}
   if(!tutar){dm('Ödeme miktarı girin!','err');return;}
   const il=el('sod-il').value.trim();
   const aciklama=el('sod-aciklama').value.trim()||'Sadece ödeme';
@@ -2300,6 +2338,7 @@ function sadecOdemeKaydet(){
   localStorage.setItem('z',JSON.stringify(zvr));
   shG('addZiyaret',z);
   el('sod-isletme').value='';el('sod-il').value='';el('sod-tutar').value='';el('sod-aciklama').value='';
+  el('sod-ara').value='';el('sod-secili').style.display='none';el('sod-sonuc').style.display='none';
   dm('✓ Ödeme kaydı eklendi — '+isletme,'ok');
 }
 
