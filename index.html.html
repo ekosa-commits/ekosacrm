@@ -2410,6 +2410,73 @@ function mkbListeGoster(){
 
 //=== RAPOR GRAFİK & ÖZET ===
 
+
+//=== MAKBUZ DÜZENLEME FONKSİYONLARI ===
+function mkbdYazi(){
+  const v=el('mkbd-mk').value.replace(',','.');
+  const n=parseFloat(v);const e=el('mkbd-yz');
+  if(!isNaN(n)&&n>0){
+    const t=Math.floor(n);const k=Math.round((n-t)*100);
+    let y=sy(t)+' Türk Lirası';if(k>0)y+=' '+sy(k)+' Kuruş';
+    e.textContent='('+y+')';e.style.display='block';
+  }else e.style.display='none';
+}
+
+function mkbDuzAc(id){
+  const m=mkbListesi.find(x=>String(x.id)===String(id));if(!m)return;
+  el('mkbd-ad').value=m.adSoyad||'';
+  el('mkbd-tc').value=m.tc||'';
+  el('mkbd-mk').value=m.miktar||'';
+  el('mkbd-eski-id').value=id;
+  mkbdYazi();
+  mAc('mkbd-m');
+}
+
+function mkbdIptalDirekt(id){
+  if(!confirm('Bu makbuz iptal edilsin mi?'))return;
+  // Sheets'e iptal gönder
+  fetch(SURL+'?action=deleteMakbuz&id='+encodeURIComponent(id)+'&token='+_T,{redirect:'follow'}).catch(()=>{});
+  mkbListesi=mkbListesi.filter(x=>String(x.id)!==String(id));
+  mkbListeGoster();
+  dm('✓ Makbuz iptal edildi','ok');
+}
+
+function mkbdIptal(){
+  const id=el('mkbd-eski-id').value;
+  if(!id||!confirm('Bu makbuz iptal edilsin mi?'))return;
+  fetch(SURL+'?action=deleteMakbuz&id='+encodeURIComponent(id)+'&token='+_T,{redirect:'follow'}).catch(()=>{});
+  mkbListesi=mkbListesi.filter(x=>String(x.id)!==String(id));
+  mkbListeGoster();
+  mKapat('mkbd-m');
+  dm('✓ Makbuz iptal edildi','ok');
+}
+
+function mkbdKaydet(){
+  const ad=el('mkbd-ad').value.trim();
+  const tc=el('mkbd-tc').value.trim();
+  const mk=el('mkbd-mk').value.trim();
+  const eskiId=el('mkbd-eski-id').value;
+  if(!ad){dm('Ad Soyad girin!','err');return;}
+  if(!mk){dm('Miktar girin!','err');return;}
+  // Eskiyi iptal et
+  if(eskiId){
+    fetch(SURL+'?action=deleteMakbuz&id='+encodeURIComponent(eskiId)+'&token='+_T,{redirect:'follow'}).catch(()=>{});
+    mkbListesi=mkbListesi.filter(x=>String(x.id)!==String(eskiId));
+  }
+  // Yeni makbuz için saha makbuz modalını aç
+  el('smkb-ad').value=ad;
+  el('smkb-tc').value=tc;
+  el('smkb-mk').value=mk;
+  smkbYazi();
+  mkbNo++;
+  localStorage.setItem('mn',String(mkbNo));
+  el('smkb-no').value='MKB-'+String(mkbNo).padStart(4,'0');
+  el('smkb-tar').value=bug();
+  mKapat('mkbd-m');
+  mAc('saha-mkb-m');
+  dm('Eski makbuz iptal edildi — yeni makbuzu yazdırın','info');
+}
+
 function bhKopyala(){
   const metin=el('bh-icerik').textContent;
   navigator.clipboard.writeText(metin).then(()=>dm('✓ Kopyalandı','ok')).catch(()=>{
@@ -2919,7 +2986,7 @@ function nav(id,btn){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));el('p-'+id).classList.add('on');
   const b={'rapor':'☀ Sabah Raporu','ziyaret':'🗺 Ziyaret Takvimi','saha':'📍 Saha Kaydı','kayitlar':'📋 Kayıtlar','musteriler':'🏪 Cari Kartlar','teklif':'💼 Teklif Takip','makbuz':'🧾 Makbuz'};
   el('hb').textContent=b[id]||'Ekosa CRM';
-  if(id==='ziyaret')zvRender();if(id==='teklif')tListele();if(id==='kayitlar')kListele();if(id==='musteriler')mlRender();
+  if(id==='ziyaret')zvRender();if(id==='teklif')tListele();if(id==='kayitlar')kListele();if(id==='musteriler')mlRender();if(id==='makbuz')setTimeout(mkbListeYukle,300);if(id==='rapor'){alimOzetRender();perPerfRender();setTimeout(haftalikGrafikCiz,200);takipBadgeGuncelle();}
 }
 function mAc(id){el(id).classList.add('open');}
 function mKapat(id){el(id).classList.remove('open');}
