@@ -293,10 +293,11 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
   <!-- Alım Özeti -->
   <div class="card">
     <div class="ct">📊 Alım Özeti</div>
-    <div style="display:flex;gap:6px;margin-bottom:10px">
-      <button class="fb on" onclick="raporSure('bugun',this)" style="flex:1;text-align:center">Bugün</button>
-      <button class="fb" onclick="raporSure('hafta',this)" style="flex:1;text-align:center">Bu Hafta</button>
-      <button class="fb" onclick="raporSure('ay',this)" style="flex:1;text-align:center">Bu Ay</button>
+    <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap">
+      <button class="fb on" onclick="raporSure('bugun',this)" style="flex:1;text-align:center;min-width:0">Bugün</button>
+      <button class="fb" onclick="raporSure('hafta',this)" style="flex:1;text-align:center;min-width:0">Hafta</button>
+      <button class="fb" onclick="raporSure('ay',this)" style="flex:1;text-align:center;min-width:0">Ay</button>
+      <button class="fb" onclick="raporSure('yil',this)" style="flex:1;text-align:center;min-width:0">Yıl</button>
     </div>
     <div id="alim-ozet"><div class="bos">Yükleniyor...</div></div>
   </div>
@@ -1536,9 +1537,12 @@ function alimOzetRender(){
   } else if(raporSureSec==='hafta'){
     const pzt=new Date(bugunD);pzt.setDate(bugunD.getDate()-bugunD.getDay()+1);pzt.setHours(0,0,0,0);
     zFilt=zFilt.filter(z=>{const t=z.tarih.includes('T')?new Date(z.tarih):new Date(z.tarih.split('.').reverse().join('-'));return t>=pzt;});
-  } else {
+  } else if(raporSureSec==='ay'){
     const ay=bugunD.getMonth(),yil=bugunD.getFullYear();
     zFilt=zFilt.filter(z=>{const t=z.tarih.includes('T')?new Date(z.tarih):new Date(z.tarih.split('.').reverse().join('-'));return t.getMonth()===ay&&t.getFullYear()===yil;});
+  } else if(raporSureSec==='yil'){
+    const yil=bugunD.getFullYear();
+    zFilt=zFilt.filter(z=>{const t=z.tarih.includes('T')?new Date(z.tarih):new Date(z.tarih.split('.').reverse().join('-'));return t.getFullYear()===yil;});
   }
 
   if(!zFilt.length){c.innerHTML='<div class="bos">Bu dönemde kayıt yok</div>';return;}
