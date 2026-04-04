@@ -296,7 +296,7 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
   <div class="card"><div class="ct">📈 Son 7 Günlük Alım Grafiği</div>
     <canvas id="haftalik-grafik" height="120" style="width:100%"></canvas>
   </div>
-  <div class="card"><div class="ct">👤 Personel Performansı</div><div id="per-perf"><div class="bos">Yükleniyor...</div></div></div>
+
   <!-- Alım Özeti -->
   <div class="card">
     <div class="ct">📊 Alım Özeti</div>
@@ -318,10 +318,7 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     <div id="per-perf"><div class="bos">Yükleniyor...</div></div>
   </div>
   <!-- Teklif Hunisi -->
-  <div class="card" id="teklif-huni-kart">
-    <div class="ct">🎯 Teklif Hunisi</div>
-    <div id="teklif-huni"></div>
-  </div>
+
   <button class="btn btn-gri" onclick="excelIndir()" style="margin-bottom:8px">📥 Bu Ayı Excel'e Aktar</button>
   <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
     <input type="date" id="bh-sec-tarih" style="flex:1;padding:10px;border:1.5px solid #e2e2e2;border-radius:8px;font-size:14px">
@@ -365,6 +362,34 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     </div>
     <button class="btn btn-gri" style="margin-top:6px;padding:9px;font-size:13px" onclick="mAc('ymm')">+ Yeni Cari Kart Aç</button>
   </div>
+  <!-- Ödeme Yap - her zaman aktif -->
+  <div class="card" id="odeme-yap-kart">
+    <div class="ct">💳 Ödeme Kaydet</div>
+    <div style="font-size:12px;color:var(--gri);margin-bottom:10px">İşletme seçili ise o işletme adına, değilse serbest ödeme</div>
+    <div class="aw" style="margin-bottom:8px"><span class="ai">⌕</span><input type="text" id="odeme-isletme-ara" placeholder="İşletme ara (opsiyonel)..." oninput="odemeIsletmeAra(this.value)" autocomplete="off"></div>
+    <div id="odeme-isletme-sonuc" style="max-height:140px;overflow-y:auto;border:1px solid #f0f0f0;border-radius:8px;display:none;margin-bottom:6px"></div>
+    <div id="odeme-isletme-secili" style="background:var(--lac-a);border-radius:8px;padding:8px 12px;margin-bottom:8px;display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--lac)" id="odeme-isletme-ad">—</div>
+          <div style="font-size:11px;color:var(--gri)" id="odeme-isletme-il">—</div>
+        </div>
+        <button onclick="odemeSec_Temizle()" style="background:none;border:none;color:var(--gri);font-size:18px;cursor:pointer">×</button>
+      </div>
+    </div>
+    <input type="hidden" id="odeme-musteriId">
+    <input type="hidden" id="odeme-musteriAdi">
+    <input type="hidden" id="odeme-musteriIl">
+    <div class="ct" style="margin-bottom:6px">Ödeme Türü *</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:11px">
+      <button class="ob on" id="optur-nakit" onclick="odemeTurSec('Nakit',this)">💵 Nakit</button>
+      <button class="ob" id="optur-yakit" onclick="odemeTurSec('Yakıt Kartı',this)">⛽ Yakıt Kartı</button>
+      <button class="ob" id="optur-havale" onclick="odemeTurSec('Havale',this)">🏦 Havale</button>
+    </div>
+    <div class="fg"><label>Ödeme Tutarı (₺) *</label><input type="number" id="odeme-tutar" placeholder="0.00" inputmode="decimal" step="0.01"></div>
+    <div class="fg" style="margin-bottom:0"><label>Açıklama (opsiyonel)</label><input type="text" id="odeme-aciklama" placeholder="Fatura tarihi, dönem..."></div>
+    <button class="btn btn-lac" onclick="odemeKaydet()" style="margin-top:10px">💾 Ödemeyi Kaydet</button>
+  </div>
   <div class="card">
     <div class="ct">Yapılan İşlem</div>
     <div class="islem-sec">
@@ -380,12 +405,7 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
         <button class="ob" data-v="Faturalı" onclick="odSec(this)">🧾 Faturalı</button>
       </div>
       <div class="fg" id="tfg"><label>Toplam Tutar (₺)</label><input type="number" id="stu" placeholder="0.00" step="0.25" min="0" inputmode="decimal"></div>
-      <!-- Ödeme yapıldı/yapılmadı -->
-      <div class="ct" style="margin-bottom:7px;margin-top:4px">Ödeme Durumu</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-        <button class="ib on" id="op-yapildi" onclick="odemeDurumSec('yapildi',this)">✅ Ödeme Yapıldı</button>
-        <button class="ib" id="op-bekliyor" onclick="odemeDurumSec('bekliyor',this)" style="border-color:#E67E22">⏳ Ödeme Bekliyor</button>
-      </div>
+
       <div id="saha-yakit-kart-alan" style="display:none;background:var(--lac-a);border-radius:8px;padding:10px 12px;margin-top:4px">
         <div style="font-size:11px;color:var(--gri);font-weight:600;margin-bottom:4px">YAKLAŞAN YAKIT KARTI</div>
         <div style="display:flex;justify-content:space-between;align-items:center">
@@ -435,15 +455,18 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
   <div style="display:flex;gap:8px;margin-bottom:8px">
     <button class="btn btn-lac" style="padding:10px;font-size:14px;flex:1" onclick="mAc('tm')">+ Yeni Teklif</button>
   </div>
-  <div class="card" id="teklif-huni-kart">
-    <div class="ct">🎯 Teklif Hunisi</div>
-    <div id="teklif-huni"></div>
+
+  <div class="aw" style="margin-bottom:8px">
+    <span class="ai">⌕</span>
+    <input type="text" id="tara" placeholder="İşletme ara..." oninput="tAra(this.value)" style="background:#f8f9fa;padding-left:33px">
+    <button class="at" id="tarat" onclick="tAraTemizle()">×</button>
   </div>
   <div class="aw" style="margin-bottom:8px">
     <span class="ai">⌕</span>
     <input type="text" id="tara" placeholder="İşletme ara..." oninput="tAra(this.value)" style="background:#f8f9fa;padding-left:33px">
     <button class="at" id="tarat" onclick="tAraTemizle()">×</button>
   </div>
+  <div class="fr" id="t-il-fr" style="margin-bottom:4px"></div>
   <div class="fr" id="t-asama-fr">
     <button class="fb on" onclick="tFil('',this)">Tümü</button>
     <button class="fb" onclick="tFil('İlk Temas',this)">İlk Temas</button>
@@ -460,23 +483,11 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
 
 <!-- MAKBUZ -->
 <div class="panel" id="p-makbuz">
-  <!-- Sadece ödeme kaydı -->
-  <div class="card">
-    <div class="ct">💰 Ödeme Kaydı</div>
-    <div style="font-size:12px;color:var(--gri);margin-bottom:10px">Alım yapmadan ödeme (geçmiş borç, avans vb.)</div>
-    <div class="aw"><span class="ai">⌕</span><input type="text" id="sod-ara" placeholder="İşletme ara..." oninput="sodAra(this.value)" autocomplete="off"></div>
-    <div id="sod-sonuc" style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;display:none;margin-bottom:6px"></div>
-    <div id="sod-secili" style="display:none;background:var(--lac-a);border-radius:8px;padding:8px 12px;margin-bottom:8px">
-      <div style="font-size:13px;font-weight:700;color:var(--lac)" id="sod-isletme-ad">—</div>
-      <div style="font-size:11px;color:var(--gri)" id="sod-isletme-il">—</div>
-    </div>
-    <input type="hidden" id="sod-isletme">
-    <input type="hidden" id="sod-il">
-    <div class="fg"><label>Ödeme Miktarı (₺) *</label><input type="number" id="sod-tutar" placeholder="0.00" inputmode="decimal"></div>
-    <div class="fg" style="margin-bottom:0"><label>Açıklama</label><input type="text" id="sod-aciklama" placeholder="Geçmiş borç, avans..."></div>
-    <button class="btn btn-lac" onclick="sadecOdemeKaydet()" style="margin-top:10px">💾 Kaydet</button>
-  </div>
-  <!-- Gizli elementler makbuz için -->
+  <!-- Gizli elementler - diğer bölümler için -->
+  <input type="hidden" id="sod-ara"><input type="hidden" id="sod-isletme"><input type="hidden" id="sod-il">
+  <input type="hidden" id="sod-tutar"><input type="hidden" id="sod-aciklama">
+  <input type="hidden" id="sod-secili"><input type="hidden" id="sod-isletme-ad"><input type="hidden" id="sod-isletme-il">
+  <input type="hidden" id="sod-sonuc">
   <input type="hidden" id="mis-ara"><input type="hidden" id="mis-isim"><input type="hidden" id="mis-il">
   <input type="hidden" id="mad"><input type="hidden" id="mtc"><input type="hidden" id="mmk">
   <input type="hidden" id="mno"><input type="hidden" id="mtar"><input type="hidden" id="myz">
@@ -484,14 +495,22 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
   <div id="mis-sonuc" style="display:none"></div><div id="mis-secili" style="display:none"></div>
   <div id="mkb-onizleme" style="display:none"><pre id="mkb-pre"></pre></div>
   <input type="hidden" id="w80"><input type="hidden" id="w58">
-  <div style="height:16px"></div>
+  <!-- Filtre -->
+  <div class="card">
+    <div class="ct">🔍 Makbuz Ara</div>
+    <div class="aw" style="margin-bottom:8px"><span class="ai">⌕</span><input type="text" id="mkb-filtre-ara" placeholder="İşletme adı veya kişi ara..." oninput="mkbFiltrele()" style="background:#f8f9fa;padding-left:33px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div><label style="font-size:11px;color:var(--gri);font-weight:600;display:block;margin-bottom:3px">Tarih</label><input type="date" id="mkb-filtre-tarih" onchange="mkbFiltrele()"></div>
+      <div style="display:flex;align-items:flex-end"><button class="btn btn-gri" onclick="mkbFiltreTemizle()" style="padding:9px;font-size:12px;margin-bottom:0">🗑 Temizle</button></div>
+    </div>
+  </div>
   <!-- Kesilen Makbuzlar -->
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="ct" style="margin-bottom:0">🗂 Kesilen Makbuzlar</div>
       <button onclick="mkbListeYukle()" style="background:var(--lac-a);color:var(--lac);border:none;padding:5px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">🔄 Yenile</button>
     </div>
-    <div id="mkb-liste"><div class="bos">Makbuz sekmesine gelin yüklenir</div></div>
+    <div id="mkb-liste"><div class="bos">Yükleniyor...</div></div>
   </div>
   <div style="height:8px"></div>
 </div>
@@ -1126,7 +1145,7 @@ async function zvKaydet(){
   if(sIslem==='alindi'&&!el('skg').value){dm('Kg miktarını girin!','err');return;}
   const z={id:Date.now(),tarih:bug(),saat:saat(),musteriId:sMst.id,musteriAdi:sMst.isim,il:sMst.il,personel:otr.adSoyad||otr.kullaniciAdi,islem:sIslem==='alindi'?'Alım Yapıldı':'Alım Yapılmadı',kg:sIslem==='alindi'?el('skg').value:'',odemeTuru:sIslem==='alindi'?sOdeme:'',tutar:sIslem==='alindi'?el('stu').value:'',
     birimFiyat:sIslem==='alindi'?(sOdeme==='Nakit'?parseFloat(sMst.nakitFiyat)||0:sOdeme==='Yakıt Kartı'?parseFloat(sMst.yakitFiyat)||0:parseFloat(sMst.faturaliFiyat)||0):0,
-    doluluk:sIslem==='alinmadi'?sDol:'',notlar:el('snot').value,odemeDurum:sIslem==='alindi'?sOdemeDurum:'Yapıldı'};
+    doluluk:sIslem==='alinmadi'?sDol:'',notlar:el('snot').value};
   if(duzZiyaretId){
     // Güncelleme modu - eski kaydı bul ve üzerine yaz
     const duzIdx=zvr.findIndex(x=>String(x.id)===String(duzZiyaretId));
@@ -1168,9 +1187,7 @@ async function zvKaydet(){
   // Sonra formu temizle
   el('skg').value='';el('stu').value='';el('snot').value='';el('sa').value='';el('sar').style.display='none';el('ss').style.display='none';
   const fbEl=el('s-fiyat-bilgi');if(fbEl)fbEl.style.display='none';
-  sMst=null;duzZiyaretId=null;sOdemeDurum='yapildi';islemSec('alindi',el('ial'));
-  document.querySelectorAll('#op-yapildi,#op-bekliyor').forEach(b=>{b.classList.remove('on');b.style.borderColor='';b.style.background='';b.style.color='';});
-  el('op-yapildi').classList.add('on');
+  sMst=null;duzZiyaretId=null;islemSec('alindi',el('ial'));
   const kb=document.querySelector('#p-saha .btn-yes');
   if(kb){kb.textContent='📍 Ziyareti Kaydet & Gönder';kb.style.background='var(--yes)';}
   raporRender();zvRender();kListele();
@@ -1215,18 +1232,18 @@ function kListele(){
   const kg=bk.filter(z=>z.islem==='Alım Yapıldı').reduce((t,z)=>t+(parseFloat(z.kg)||0),0);
   const alimlar=bk.filter(z=>z.islem==='Alım Yapıldı');
   const topKg2=alimlar.reduce((t,z)=>t+(parseFloat(z.kg)||0),0);
-  // KDV hariç gerçek maliyet
+  // KDV hariç gerçek maliyet: Nakit=KDV yok, Faturalı+YakıtKartı=KDV dahil ÷1.20
   let topMaliyet=0,maliyetliKg=0;
   alimlar.forEach(z=>{
     const kg2=parseFloat(z.kg)||0;
-    const tutar=parseFloat(z.tutar)||0;
-    if(tutar>0&&kg2>0){
-      const gercek=z.odemeTuru==='Nakit'?tutar:tutar/1.20;
-      topMaliyet+=gercek;maliyetliKg+=kg2;
+    const bf=parseFloat(z.birimFiyat)||0;
+    if(bf>0&&kg2>0){
+      const kdvVar=z.odemeTuru==='Faturalı'||z.odemeTuru==='Yakıt Kartı';
+      topMaliyet+=kg2*(kdvVar?bf/1.20:bf);maliyetliKg+=kg2;
     }
   });
   const ortFiyat=maliyetliKg>0?(topMaliyet/maliyetliKg).toFixed(2):null;
-  el('ko').textContent=alimlar.length+' alım · '+topKg2.toFixed(0)+' kg'+(ortFiyat?' · Ort: '+ortFiyat+'₺/kg':'');
+  el('ko').textContent=alimlar.length+' alım · '+topKg2.toFixed(0)+' kg'+(ortFiyat?' · Ort.Net: '+ortFiyat+'₺/kg':'');
   const c=el('kl');if(!bk.length){c.innerHTML='<div class="bos">Bugün henüz kayıt yok</div>';return;}
   c.innerHTML=bk.map(z=>{
     const al=z.islem==='Alım Yapıldı';
@@ -1560,20 +1577,19 @@ function alimOzetRender(){
   const c=el('alim-ozet');
   if(!ziyaretSayisi){c.innerHTML='<div class="bos">Bu dönemde kayıt yok</div>';return;}
   
-  // KDV hariç gerçek maliyet hesabı
+  // KDV hariç gerçek maliyet: Nakit=KDV yok, Faturalı+YakıtKartı=KDV dahil ÷1.20
   let topMaliyet=0,maliyetliKg=0;
   zFilt.forEach(z=>{
     const kg2=parseFloat(z.kg)||0;
     const m2=mst.find(x=>String(x.id)===String(z.musteriId));
-    // birimFiyat varsa kullan, yoksa cariden al
     const bf=parseFloat(z.birimFiyat)||0||
              (z.odemeTuru==='Nakit'?(m2?parseFloat(m2.nakitFiyat)||0:0):
               z.odemeTuru==='Yakıt Kartı'?(m2?parseFloat(m2.yakitFiyat)||0:0):
               (m2?parseFloat(m2.faturaliFiyat)||0:0));
     if(bf>0&&kg2>0){
-      const toplam2=kg2*bf;
-      const gercek=z.odemeTuru==='Faturalı'?toplam2/1.20:toplam2;
-      topMaliyet+=gercek;maliyetliKg+=kg2;
+      const kdvVar=z.odemeTuru==='Faturalı'||z.odemeTuru==='Yakıt Kartı';
+      const fiyatNet=kdvVar?bf/1.20:bf;
+      topMaliyet+=kg2*fiyatNet;maliyetliKg+=kg2;
     }
   });
   const ortFiyat=maliyetliKg>0?(topMaliyet/maliyetliKg).toFixed(2):null;
@@ -1586,9 +1602,10 @@ function alimOzetRender(){
     const kg2=parseFloat(z.kg)||0;
     const tutar=parseFloat(z.tutar)||0;
     ilMaliyet[z.il].kg+=kg2;ilMaliyet[z.il].sayi++;
-    if(tutar>0&&kg2>0){
-      const gercek=z.odemeTuru==='Nakit'?tutar:tutar/1.20;
-      ilMaliyet[z.il].maliyet+=gercek;ilMaliyet[z.il].malKg+=kg2;
+    if(bf>0&&kg2>0){
+      const kdvVar=z.odemeTuru==='Faturalı'||z.odemeTuru==='Yakıt Kartı';
+      const fiyatNet=kdvVar?bf/1.20:bf;
+      ilMaliyet[z.il].maliyet+=kg2*fiyatNet;ilMaliyet[z.il].malKg+=kg2;
     }
   });
 
@@ -2215,266 +2232,88 @@ function bhRaporGoster(){
     const [y,m2,g]=bhTarihInput.value.split('-');
     bugun=g+'.'+m2+'.'+y;
   }
-  const bk=zvr.filter(function(z){
+  // Alış kayıtları
+  const alislar=zvr.filter(function(z){
     const zt=z.tarih&&z.tarih.includes('T')?ft2(z.tarih):z.tarih;
-    return zt===bugun&&(z.islem==='Alım Yapıldı'||z.islem==='Alim Yapildi');
+    return zt===bugun&&z.islem==='Alım Yapıldı';
   });
-  // Sadece ödeme kayıtları
-  const sodemeKayitlari=zvr.filter(function(z){
+  // Ödeme kayıtları (yeni sistem)
+  const odemeler=zvr.filter(function(z){
     const zt=z.tarih&&z.tarih.includes('T')?ft2(z.tarih):z.tarih;
-    return zt===bugun&&z.islem==='Sadece Ödeme';
+    return zt===bugun&&z.islem==='Ödeme';
   });
-  if(!bk.length){dm('Bu tarihte alım kaydı yok','err');return;}
-  el('bh-tarih').textContent=bugun+' - Bizimhesap Gunluk Raporu';
 
-  const satirlar=[];
+  if(!alislar.length&&!odemeler.length){dm('Bu tarihte kayıt yok','err');return;}
+  el('bh-tarih').textContent=bugun+' — Bizimhesap Günlük Raporu';
+
+  const sat=[];
   let topKg=0,topTutar=0,topOdenen=0;
 
-  // ── TÜM ALIŞLAR ──
-  satirlar.push('============================');
-  satirlar.push('  ALISLAR ('+bk.length+' isletme)');
-  satirlar.push("  Bizimhesap'a alis olarak gir");
-  satirlar.push('============================');
+  if(alislar.length){
+    sat.push('============================');
+    sat.push('  ALISLAR ('+alislar.length+' isletme)');
+    sat.push("  Bizimhesap'a ALIS olarak gir");
+    sat.push('============================');
 
-  bk.forEach(function(z,i){
-    const m=mst.find(function(x){return String(x.id)===String(z.musteriId);});
-    const fiyat=z.odemeTuru==='Nakit'?(m?parseFloat(m.nakitFiyat)||0:0):
-                 z.odemeTuru==='Yakıt Kartı'?(m?parseFloat(m.yakitFiyat)||0:0):
-                 (m?parseFloat(m.faturaliFiyat)||0:0);
-    const kg=parseFloat(z.kg)||0;
-    const toplam=kg*fiyat;
-    const net=z.odemeTuru==='Faturalı'?toplam/1.20:toplam;
-    const kdv=z.odemeTuru==='Faturalı'?toplam-net:0;
-    topKg+=kg; topTutar+=toplam;
+    alislar.forEach(function(z,i){
+      const m=mst.find(function(x){return String(x.id)===String(z.musteriId);});
+      // Birim fiyat: kaydedilen fiyatı kullan
+      const bf=parseFloat(z.birimFiyat)||0;
+      const kg=parseFloat(z.kg)||0;
+      const toplam=kg*bf;
 
-    // Ödeme durumu
-    const odendi=!z.odemeDurum||z.odemeDurum==='yapildi'||z.odemeDurum==='Yapıldı';
-    // Sadece gerçek makbuz tutarını kullan - z.tutar alış tutarıdır, ödeme değil
-    const makbuzTutar=parseFloat(z.odenenMakbuzTutar)||0;
-    if(odendi && makbuzTutar>0) topOdenen+=makbuzTutar;
+      // KDV: sadece faturalı ve yakıt kartında
+      const kdvVar=z.odemeTuru==='Faturalı'||z.odemeTuru==='Yakıt Kartı';
+      const net=kdvVar?toplam/1.20:toplam;
+      const kdv=kdvVar?toplam-net:0;
 
-    satirlar.push('');
-    satirlar.push((i+1)+'. '+z.musteriAdi+' ('+z.il+')');
-    satirlar.push('   Odeme turu : '+z.odemeTuru);
-    if(z.odemeTuru==='Yakıt Kartı'&&m&&m.yakitKartNo)
-      satirlar.push('   Kart No   : '+m.yakitKartNo);
-    satirlar.push('   Miktar    : '+kg+' kg');
-    satirlar.push('   Birim     : '+(fiyat>0?fiyat.toFixed(2)+' TL/kg':'!! Fiyat girilmemis'));
-    if(kdv>0){
-      satirlar.push('   KDV hariç: '+net.toFixed(2)+' TL');
-      satirlar.push('   KDV (%20) : '+kdv.toFixed(2)+' TL');
-    }
-    satirlar.push('   TUTAR     : '+toplam.toFixed(2)+' TL');
-    satirlar.push('   - - - - - - - - - - - -');
+      topKg+=kg;
+      topTutar+=toplam;
 
-    // Ödeme satırı - sadece makbuz kesilmişse göster
-    if(makbuzTutar>0){
-      satirlar.push('   ODEME     : '+makbuzTutar.toFixed(2)+' TL << Odendi');
-      const fark=makbuzTutar-toplam;
-      if(Math.abs(fark)>0.01)
-        satirlar.push('   Fark      : '+(fark>0?'+':'')+fark.toFixed(2)+' TL '+(fark>0?'(fazla)':'(eksik)'));
-      if(z.makbuzNo) satirlar.push('   Mkb No   : '+z.makbuzNo);
-    } else {
-      satirlar.push('   ODEME     : Odeme yapilmadi');
-    }
-    satirlar.push('============================');
-  });
-
-  // ── ÖZET ──
-  const odenmeyenSayisi=bk.filter(function(z){
-    return z.odemeDurum==='bekliyor'||z.odemeDurum==='Bekliyor';
-  }).length;
-
-  // Sadece ödeme kayıtları
-  if(sodemeKayitlari.length){
-    satirlar.push('');
-    satirlar.push('============================');
-    satirlar.push('  SADECE ODEME KAYITLARI');
-    satirlar.push("  Bizimhesap'a odeme olarak gir");
-    satirlar.push('============================');
-    sodemeKayitlari.forEach(function(z,i){
-      const tutar=parseFloat(z.tutar)||0;
-      topOdenen+=tutar;
-      satirlar.push((i+1)+'. '+z.musteriAdi+(z.il?' ('+z.il+')':''));
-      satirlar.push('   ODEME  : '+tutar.toFixed(2)+' TL');
-      if(z.notlar) satirlar.push('   Acikl. : '+z.notlar);
-      satirlar.push('- - - - - - - - - - - - - -');
+      sat.push('');
+      sat.push((i+1)+'. '+z.musteriAdi+(z.il?' ('+z.il+')':''));
+      sat.push('   Odeme turu : '+z.odemeTuru);
+      if(z.odemeTuru==='Yakıt Kartı'&&m&&m.yakitKartNo)
+        sat.push('   Kart No   : '+m.yakitKartNo);
+      sat.push('   Miktar    : '+kg+' kg');
+      if(bf>0) sat.push('   Birim     : '+bf.toFixed(2)+' TL/kg');
+      if(kdvVar&&kdv>0){
+        sat.push('   KDV hariç : '+net.toFixed(2)+' TL');
+        sat.push('   KDV (%20) : '+kdv.toFixed(2)+' TL');
+      }
+      sat.push('   TUTAR     : '+toplam.toFixed(2)+' TL');
+      sat.push('============================');
     });
   }
 
-  satirlar.push('');
-  satirlar.push('----------------------------');
-  satirlar.push('TOPLAM KG   : '+topKg.toFixed(0)+' kg');
-  satirlar.push('TOPLAM TUTAR: '+topTutar.toFixed(2)+' TL');
-  satirlar.push('ODENEN      : '+topOdenen.toFixed(2)+' TL');
-  satirlar.push('ODENMEMIŞ   : '+(topTutar-topOdenen).toFixed(2)+' TL');
-  satirlar.push('----------------------------');
+  if(odemeler.length){
+    sat.push('');
+    sat.push('============================');
+    sat.push('  ODEMELER ('+odemeler.length+' kayit)');
+    sat.push("  Bizimhesap'a ODEME olarak gir");
+    sat.push('============================');
+    odemeler.forEach(function(z,i){
+      const tutar=parseFloat(z.tutar)||0;
+      topOdenen+=tutar;
+      sat.push('');
+      sat.push((i+1)+'. '+z.musteriAdi+(z.il?' ('+z.il+')':''));
+      sat.push('   Odeme turu : '+z.odemeTuru);
+      sat.push('   TUTAR     : '+tutar.toFixed(2)+' TL');
+      if(z.notlar) sat.push('   Not       : '+z.notlar);
+      sat.push('============================');
+    });
+  }
 
-  el('bh-icerik').textContent=satirlar.join('\n');
+  sat.push('');
+  sat.push('----------------------------');
+  sat.push('TOPLAM KG   : '+topKg.toFixed(0)+' kg');
+  sat.push('TOPLAM TUTAR: '+topTutar.toFixed(2)+' TL');
+  sat.push('ODENEN      : '+topOdenen.toFixed(2)+' TL');
+  if(topTutar>0) sat.push('ODENMEMIS   : '+(topTutar-topOdenen).toFixed(2)+' TL');
+  sat.push('----------------------------');
+
+  el('bh-icerik').textContent=sat.join('\n');
   mAc('bh-m');
-}
-
-function sodAra(v){
-  const r=el('sod-sonuc');
-  if(!v||v.length<1){r.style.display='none';return;}
-  const n=nrm(v);
-  const E=mst.filter(m=>m.aktif!==false&&(nrm(m.isim).includes(n)||nrm(m.il||'').includes(n))).slice(0,8);
-  if(!E.length){r.innerHTML='<div style="padding:10px;font-size:12px;color:var(--gri)">Bulunamadı</div>';r.style.display='block';return;}
-  r.innerHTML=E.map(m=>`<div class="sai" onclick="sodSec(${m.id})">
-    <div class="sn">${m.isim}</div>
-    <div class="sa">${m.il||''}${m.bolge?' · '+m.bolge:''}</div>
-  </div>`).join('');
-  r.style.display='block';
-}
-
-function sodSec(id){
-  const m=mst.find(x=>x.id===id);if(!m)return;
-  el('sod-ara').value=m.isim;
-  el('sod-isletme').value=m.isim;
-  el('sod-il').value=m.il||'';
-  el('sod-isletme-ad').textContent=m.isim;
-  el('sod-isletme-il').textContent=m.il||'';
-  el('sod-secili').style.display='block';
-  el('sod-sonuc').style.display='none';
-}
-
-function sadecOdemeKaydet(){
-  const isletme=el('sod-isletme').value.trim();
-  const tutar=parseFloat(el('sod-tutar').value)||0;
-  if(!isletme){dm('Önce işletme seçin!','err');el('sod-ara').focus();return;}
-  if(!tutar){dm('Ödeme miktarı girin!','err');return;}
-  const il=el('sod-il').value.trim();
-  const aciklama=el('sod-aciklama').value.trim()||'Sadece ödeme';
-  // Ziyaret kaydı olarak kaydet - islem='Sadece Ödeme'
-  const z={
-    id:Date.now(),tarih:bug(),saat:saat(),
-    musteriId:'',musteriAdi:isletme,il,
-    personel:otr?.adSoyad||otr?.kullaniciAdi||'',
-    islem:'Sadece Ödeme',kg:'',odemeTuru:'Nakit',
-    tutar:tutar.toString(),doluluk:'',notlar:aciklama,
-    odemeDurum:'yapildi',odenenMakbuzTutar:tutar
-  };
-  zvr.unshift(z);
-  localStorage.setItem('z',JSON.stringify(zvr));
-  shG('addZiyaret',z);
-  el('sod-isletme').value='';el('sod-il').value='';el('sod-tutar').value='';el('sod-aciklama').value='';
-  el('sod-ara').value='';el('sod-secili').style.display='none';el('sod-sonuc').style.display='none';
-  dm('✓ Ödeme kaydı eklendi — '+isletme,'ok');
-}
-
-
-//=== MAKBUZ LİSTE & DÜZENLE ===
-let mkbListesi=[];
-
-async function mkbListeYukle(){
-  const liste=el('mkb-liste');
-  if(!liste)return;
-  liste.innerHTML='<div class="bos">Yükleniyor...</div>';
-  try{
-    const r=await fetch(SURL+'?action=getMakbuzlar&token='+_T,{redirect:'follow'});
-    const txt=await r.text();
-    let d;
-    try{d=JSON.parse(txt);}catch(pe){
-      liste.innerHTML='<div class="bos" style="color:var(--kir)">Sunucu yanıt hatası</div>';
-      return;
-    }
-    mkbListesi=d.makbuzlar||[];
-    if(!mkbListesi.length){
-      liste.innerHTML='<div class="bos">Henüz makbuz yok</div>';
-      return;
-    }
-    mkbListeGoster();
-  }catch(e){
-    liste.innerHTML='<div class="bos" style="color:var(--kir)">⚠ Bağlantı yok</div>';
-  }
-}
-
-function mkbListeGoster(){
-  const liste=el('mkb-liste');
-  if(!liste||!mkbListesi.length)return;
-  liste.innerHTML=mkbListesi.slice(0,30).map(m=>`
-    <div style="padding:10px 0;border-bottom:1px solid #f5f5f5">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:700;color:#222">${m.adSoyad}</div>
-          <div style="font-size:11px;color:var(--gri)">${m.makbuzNo} · ${m.tarih} · ${m.isletme||''}</div>
-          <div style="font-size:13px;font-weight:700;color:var(--lac);margin-top:2px">${parseFloat(m.miktar||0).toFixed(2)} ₺</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0;margin-left:8px">
-          <button onclick="mkbDuzAc('${m.id}')" style="background:var(--lac-a);color:var(--lac);border:none;padding:5px 9px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">✏️</button>
-          <button onclick="mkbdIptalDirekt('${m.id}')" style="background:var(--kir-a);color:var(--kir);border:none;padding:5px 9px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">🗑</button>
-        </div>
-      </div>
-    </div>`).join('');
-}
-
-//=== RAPOR GRAFİK & ÖZET ===
-
-
-//=== MAKBUZ DÜZENLEME FONKSİYONLARI ===
-function mkbdYazi(){
-  const v=el('mkbd-mk').value.replace(',','.');
-  const n=parseFloat(v);const e=el('mkbd-yz');
-  if(!isNaN(n)&&n>0){
-    const t=Math.floor(n);const k=Math.round((n-t)*100);
-    let y=sy(t)+' Türk Lirası';if(k>0)y+=' '+sy(k)+' Kuruş';
-    e.textContent='('+y+')';e.style.display='block';
-  }else e.style.display='none';
-}
-
-function mkbDuzAc(id){
-  const m=mkbListesi.find(x=>String(x.id)===String(id));if(!m)return;
-  el('mkbd-ad').value=m.adSoyad||'';
-  el('mkbd-tc').value=m.tc||'';
-  el('mkbd-mk').value=m.miktar||'';
-  el('mkbd-eski-id').value=id;
-  mkbdYazi();
-  mAc('mkbd-m');
-}
-
-function mkbdIptalDirekt(id){
-  if(!confirm('Bu makbuz iptal edilsin mi?'))return;
-  // Sheets'e iptal gönder
-  fetch(SURL+'?action=deleteMakbuz&id='+encodeURIComponent(id)+'&token='+_T,{redirect:'follow'}).catch(()=>{});
-  mkbListesi=mkbListesi.filter(x=>String(x.id)!==String(id));
-  mkbListeGoster();
-  dm('✓ Makbuz iptal edildi','ok');
-}
-
-function mkbdIptal(){
-  const id=el('mkbd-eski-id').value;
-  if(!id||!confirm('Bu makbuz iptal edilsin mi?'))return;
-  fetch(SURL+'?action=deleteMakbuz&id='+encodeURIComponent(id)+'&token='+_T,{redirect:'follow'}).catch(()=>{});
-  mkbListesi=mkbListesi.filter(x=>String(x.id)!==String(id));
-  mkbListeGoster();
-  mKapat('mkbd-m');
-  dm('✓ Makbuz iptal edildi','ok');
-}
-
-function mkbdKaydet(){
-  const ad=el('mkbd-ad').value.trim();
-  const tc=el('mkbd-tc').value.trim();
-  const mk=el('mkbd-mk').value.trim();
-  const eskiId=el('mkbd-eski-id').value;
-  if(!ad){dm('Ad Soyad girin!','err');return;}
-  if(!mk){dm('Miktar girin!','err');return;}
-  // Eskiyi iptal et
-  if(eskiId){
-    fetch(SURL+'?action=deleteMakbuz&id='+encodeURIComponent(eskiId)+'&token='+_T,{redirect:'follow'}).catch(()=>{});
-    mkbListesi=mkbListesi.filter(x=>String(x.id)!==String(eskiId));
-  }
-  // Yeni makbuz için saha makbuz modalını aç
-  el('smkb-ad').value=ad;
-  el('smkb-tc').value=tc;
-  el('smkb-mk').value=mk;
-  smkbYazi();
-  mkbNo++;
-  localStorage.setItem('mn',String(mkbNo));
-  el('smkb-no').value='MKB-'+String(mkbNo).padStart(4,'0');
-  el('smkb-tar').value=bug();
-  mKapat('mkbd-m');
-  mAc('saha-mkb-m');
-  dm('Eski makbuz iptal edildi — yeni makbuzu yazdırın','info');
 }
 
 function bhKopyala(){
