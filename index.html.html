@@ -316,6 +316,24 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     <div class="ct">🎯 Teklif Hunisi</div>
     <div id="teklif-huni"></div>
   </div>
+  <!-- Bu Hafta Yeni Müşteriler -->
+  <div class="card">
+    <div class="ct">🆕 Bu Hafta Yeni Kazanılan Müşteriler</div>
+    <div id="yeni-musteri-ozet"><div class="bos">Yükleniyor...</div></div>
+  </div>
+  <!-- Takip Tarihi Gelmiş Teklifler -->
+  <div class="card" id="takip-geldi-kart">
+    <div class="ct">⏰ Takip Tarihi Gelmiş / Yaklaşan Teklifler</div>
+    <div id="takip-geldi-liste"><div class="bos">Yükleniyor...</div></div>
+  </div>
+  <!-- İşletme Büyüme Trendi -->
+  <div class="card">
+    <div class="ct">📈 İşletme Büyüme Trendi (3 Ay)</div>
+    <div class="aw" style="margin-bottom:8px"><span class="ai">⌕</span><input type="text" id="trend-ara" placeholder="İşletme ara..." oninput="trendAra(this.value)" style="background:#f8f9fa;padding-left:33px"></div>
+    <div id="trend-sonuc" style="max-height:160px;overflow-y:auto;border:1px solid #f0f0f0;border-radius:8px;display:none;margin-bottom:8px"></div>
+    <div id="trend-secili" style="display:none;font-size:13px;font-weight:700;color:var(--lac);margin-bottom:10px;padding:8px 12px;background:var(--lac-a);border-radius:8px"></div>
+    <div id="trend-grafik"><div class="bos" style="font-size:12px">İşletme arayarak 3 aylık kg trendini görün</div></div>
+  </div>
   <button class="btn btn-gri" onclick="excelIndir()" style="margin-bottom:8px">📥 Bu Ayı Excel'e Aktar</button>
   <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
     <input type="date" id="bh-sec-tarih" style="flex:1;padding:10px;border:1.5px solid #e2e2e2;border-radius:8px;font-size:14px">
@@ -833,7 +851,7 @@ async function sync(manuel){
     if(d.kullanicilar){kul=d.kullanicilar;localStorage.setItem('k',JSON.stringify(kul));}
     el('sd').className='sync-dot';
     ddDoldur();raporRender();zvRender();tListele();kListele();
-  setTimeout(()=>{alimOzetRender();perPerfRender();setTimeout(haftalikGrafikCiz,300);takipBadgeGuncelle();teklifHuniRender();},600);
+  setTimeout(()=>{alimOzetRender();perPerfRender();setTimeout(haftalikGrafikCiz,300);takipBadgeGuncelle();teklifHuniRender();yeniMusteriRender();takipGeldiRender();},600);
     if(manuel)dm('✓ Güncellendi — '+mst.length+' işletme','ok');
   }catch(e){
     el('sd').className='sync-dot hata';
@@ -2453,6 +2471,231 @@ function mkbdKaydet(){
   dm('Eski makbuz iptal edildi — yeni makbuzu yazdırın','info');
 }
 
+
+//=== YENİ MÜŞTERİ SAYACI ===
+function yeniMusteriRender(){
+  const c=el('yeni-musteri-ozet');if(!c)return;
+  const bugunD=new Date();bugunD.setHours(0,0,0,0);
+  // Bu haftanın başı (Pazartesi)
+  const pzt=new Date(bugunD);
+  pzt.setDate(bugunD.getDate()-bugunD.getDay()+1);
+  // Geçen haftanın başı
+  const gecenPzt=new Date(pzt);gecenPzt.setDate(pzt.getDate()-7);
+
+  // Bu hafta ilk ziyareti olan işletmeler
+  // Mantık: zvr'de bu hafta kaydı var ama bu haftadan önce kaydı YOK olan işletmeler
+  const buHaftaIds=new Set();
+  const eskiIds=new Set();
+  zvr.forEach(z=>{
+    if(!z.musteriId||!z.tarih)return;
+    const t=z.tarih.includes('T')?new Date(z.tarih):new Date(z.tarih.split('.').reverse().join('-'));
+    if(t>=pzt) buHaftaIds.add(String(z.musteriId));
+    else eskiIds.add(String(z.musteriId));
+  });
+  // Sadece bu hafta ilk kez görünen işletmeler
+  const yeniIds=[...buHaftaIds].filter(id=>!eskiIds.has(id));
+  const yeniMusteriler=yeniIds.map(id=>mst.find(m=>String(m.id)===id)).filter(Boolean);
+
+  // Geçen hafta yenileri (karşılaştırma için)
+  const gecenHaftaIds=new Set();const oncekiIds=new Set();
+  zvr.forEach(z=>{
+    if(!z.musteriId||!z.tarih)return;
+    const t=z.tarih.includes('T')?new Date(z.tarih):new Date(z.tarih.split('.').reverse().join('-'));
+    if(t>=gecenPzt&&t<pzt) gecenHaftaIds.add(String(z.musteriId));
+    else if(t<gecenPzt) oncekiIds.add(String(z.musteriId));
+  });
+  const gecenYeniSayi=[...gecenHaftaIds].filter(id=>!oncekiIds.has(id)).length;
+
+  const fark=yeniMusteriler.length-gecenYeniSayi;
+  const farkTxt=fark>0?`<span style="color:var(--yes-d);font-size:11px;font-weight:600">▲ ${fark} geçen haftaya göre</span>`:
+                fark<0?`<span style="color:var(--kir);font-size:11px;font-weight:600">▼ ${Math.abs(fark)} geçen haftaya göre</span>`:
+                `<span style="color:var(--gri);font-size:11px">= Geçen hafta ile aynı</span>`;
+
+  let h=`<div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+    <div style="text-align:center;background:var(--yes-a);border-radius:10px;padding:12px 18px">
+      <div style="font-size:32px;font-weight:800;color:var(--yes-d)">${yeniMusteriler.length}</div>
+      <div style="font-size:10px;color:var(--gri)">Bu Hafta</div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">Yeni İşletme</div>
+      ${farkTxt}
+      <div style="font-size:11px;color:var(--gri);margin-top:3px">Geçen hafta: ${gecenYeniSayi}</div>
+    </div>
+  </div>`;
+
+  if(yeniMusteriler.length){
+    h+=yeniMusteriler.map(m=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f5f5f5">
+        <div>
+          <div style="font-size:13px;font-weight:600">${m.isim}</div>
+          <div style="font-size:11px;color:var(--gri)">${m.il||''}${m.bolge?' · '+m.bolge:''}</div>
+        </div>
+        <button onclick="rotaGit(${m.id})" style="background:var(--lac-a);color:var(--lac);border:none;padding:5px 9px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Saha</button>
+      </div>`).join('');
+  } else {
+    h+='<div style="font-size:12px;color:var(--gri);text-align:center;padding:8px 0">Bu hafta yeni işletme yok</div>';
+  }
+  c.innerHTML=h;
+}
+
+//=== TAKİP TARİHİ GELMİŞ TEKLİFLER ===
+function takipGeldiRender(){
+  const c=el('takip-geldi-liste');const kart=el('takip-geldi-kart');
+  if(!c)return;
+  const bugunD=new Date();
+  const bugunISO=bugunD.getFullYear()+'-'+String(bugunD.getMonth()+1).padStart(2,'0')+'-'+String(bugunD.getDate()).padStart(2,'0');
+  const ucGunISO=(()=>{const d=new Date(bugunD);d.setDate(d.getDate()+3);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
+
+  const aktifTeklifler=tkl.filter(t=>t.asama!=='Reddetti'&&t.asama!=='Sözleşme İmzalandı'&&t.takipTarihi);
+  const gecmis=aktifTeklifler.filter(t=>t.takipTarihi<=bugunISO).sort((a,b)=>a.takipTarihi.localeCompare(b.takipTarihi));
+  const yaklasan=aktifTeklifler.filter(t=>t.takipTarihi>bugunISO&&t.takipTarihi<=ucGunISO).sort((a,b)=>a.takipTarihi.localeCompare(b.takipTarihi));
+
+  if(!gecmis.length&&!yaklasan.length){
+    c.innerHTML='<div class="bos" style="color:var(--yes-d)">✓ Bekleyen takip yok</div>';
+    return;
+  }
+
+  let h='';
+  if(gecmis.length){
+    h+=`<div style="font-size:11px;font-weight:700;color:var(--kir);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🔴 Tarihi Geçmiş (${gecmis.length})</div>`;
+    h+=gecmis.map(t=>`
+      <div style="background:var(--kir-a);border-radius:8px;padding:10px 12px;margin-bottom:6px;border-left:3px solid var(--kir)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:#222">${t.isletme}</div>
+            <div style="font-size:11px;color:var(--gri)">${t.il||''} · ${t.asama}</div>
+            <div style="font-size:11px;font-weight:600;color:var(--kir);margin-top:3px">📅 ${t.takipTarihi} — Tarih geçti!</div>
+            ${t.not?`<div style="font-size:11px;color:var(--gri);margin-top:3px;font-style:italic">${t.not.substring(0,60)}</div>`:''}
+          </div>
+          <button onclick="tDuz(${t.id});nav('teklif',document.querySelectorAll('.nb')[5])" style="background:var(--kir);color:#fff;border:none;padding:6px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:8px;flex-shrink:0">Güncelle</button>
+        </div>
+      </div>`).join('');
+  }
+  if(yaklasan.length){
+    h+=`<div style="font-size:11px;font-weight:700;color:var(--tur);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 6px">🟡 3 Gün İçinde (${yaklasan.length})</div>`;
+    h+=yaklasan.map(t=>`
+      <div style="background:var(--tur-a);border-radius:8px;padding:10px 12px;margin-bottom:6px;border-left:3px solid var(--tur)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:#222">${t.isletme}</div>
+            <div style="font-size:11px;color:var(--gri)">${t.il||''} · ${t.asama}</div>
+            <div style="font-size:11px;font-weight:600;color:var(--tur);margin-top:3px">📅 ${t.takipTarihi}</div>
+            ${t.not?`<div style="font-size:11px;color:var(--gri);margin-top:3px;font-style:italic">${t.not.substring(0,60)}</div>`:''}
+          </div>
+          <button onclick="tDuz(${t.id});nav('teklif',document.querySelectorAll('.nb')[5])" style="background:var(--tur);color:#fff;border:none;padding:6px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:8px;flex-shrink:0">Görüntüle</button>
+        </div>
+      </div>`).join('');
+  }
+  c.innerHTML=h;
+}
+
+//=== İŞLETME BÜYÜME TRENDİ ===
+function trendAra(v){
+  const r=el('trend-sonuc');
+  if(!v||v.length<2){r.style.display='none';return;}
+  const n=nrm(v);
+  const E=mst.filter(m=>m.aktif!==false&&(nrm(m.isim).includes(n)||nrm(m.il||'').includes(n))).slice(0,8);
+  if(!E.length){r.innerHTML='<div style="padding:10px;font-size:12px;color:var(--gri)">Bulunamadı</div>';r.style.display='block';return;}
+  r.innerHTML=E.map(m=>`<div class="sai" onclick="trendSecisletme(${m.id})">
+    <div class="sn">${m.isim}</div>
+    <div class="sa">${m.il||''}${m.bolge?' · '+m.bolge:''}</div>
+  </div>`).join('');
+  r.style.display='block';
+}
+
+function trendSecisletme(id){
+  const m=mst.find(x=>x.id===id);if(!m)return;
+  el('trend-ara').value=m.isim;
+  el('trend-sonuc').style.display='none';
+  const sel=el('trend-secili');
+  sel.textContent='🏪 '+m.isim+(m.il?' · '+m.il:'');
+  sel.style.display='block';
+  trendCiz(id);
+}
+
+function trendCiz(musteriId){
+  const c=el('trend-grafik');if(!c)return;
+  const bugunD=new Date();
+  // 3 aylık veri: geçen 2 ay + bu ay
+  const aylar=[];
+  for(let i=2;i>=0;i--){
+    const d=new Date(bugunD.getFullYear(),bugunD.getMonth()-i,1);
+    const ay=d.getMonth(),yil=d.getFullYear();
+    const ayAdi=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'][ay];
+    const ayZvr=zvr.filter(z=>{
+      if(String(z.musteriId)!==String(musteriId)||z.islem!=='Alım Yapıldı')return false;
+      const t=z.tarih.includes('T')?new Date(z.tarih):new Date(z.tarih.split('.').reverse().join('-'));
+      return t.getMonth()===ay&&t.getFullYear()===yil;
+    });
+    const kg=ayZvr.reduce((s,z)=>s+(parseFloat(z.kg)||0),0);
+    const sayi=ayZvr.length;
+    let ortFiyat=null;
+    let malKg=0,malToplam=0;
+    ayZvr.forEach(z=>{
+      const bf=parseFloat(z.birimFiyat)||0;
+      const kg2=parseFloat(z.kg)||0;
+      if(bf>0&&kg2>0){
+        const kdvVar=z.odemeTuru==='Faturalı'||z.odemeTuru==='Yakıt Kartı';
+        malToplam+=kg2*(kdvVar?bf/1.20:bf);malKg+=kg2;
+      }
+    });
+    if(malKg>0)ortFiyat=(malToplam/malKg).toFixed(2);
+    aylar.push({ad:ayAdi+' '+yil,kg,sayi,ortFiyat});
+  }
+
+  const maxKg=Math.max(...aylar.map(a=>a.kg),1);
+  const trend=aylar[2].kg>aylar[0].kg?'artıyor':aylar[2].kg<aylar[0].kg?'azalıyor':'sabit';
+  const trendRenk=trend==='artıyor'?'var(--yes-d)':trend==='azalıyor'?'var(--kir)':'var(--gri)';
+  const trendEmoji=trend==='artıyor'?'📈':trend==='azalıyor'?'📉':'➡️';
+
+  let h=`<div style="font-size:12px;font-weight:600;color:${trendRenk};margin-bottom:12px">${trendEmoji} Hacim ${trend}</div>`;
+
+  // Bar grafik
+  h+=`<div style="display:flex;gap:8px;align-items:flex-end;height:100px;margin-bottom:6px">`;
+  aylar.forEach((a,i)=>{
+    const barH=a.kg>0?Math.max(8,Math.round((a.kg/maxKg)*84)):0;
+    const renk=i===2?'var(--lac)':i===1?'#4A6BAD':'#8BA8D4';
+    h+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <div style="font-size:11px;font-weight:700;color:${renk}">${a.kg>0?a.kg.toFixed(0)+' kg':'-'}</div>
+      <div style="width:100%;background:${renk};border-radius:5px 5px 0 0;height:${barH}px;min-height:${a.kg>0?8:0}px;transition:height .3s"></div>
+    </div>`;
+  });
+  h+=`</div>`;
+
+  // Ay etiketleri
+  h+=`<div style="display:flex;gap:8px;margin-bottom:12px">`;
+  aylar.forEach(a=>{
+    h+=`<div style="flex:1;text-align:center;font-size:10px;color:var(--gri);font-weight:600">${a.ad}</div>`;
+  });
+  h+=`</div>`;
+
+  // Detay tablo
+  h+=`<div style="border:1px solid #f0f0f0;border-radius:8px;overflow:hidden">
+    <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;background:#f8f9fa;padding:6px 10px;font-size:10px;font-weight:700;color:var(--gri);text-transform:uppercase">
+      <span>Ay</span><span style="text-align:center">Kg</span><span style="text-align:center">Alım</span><span style="text-align:right">Ort.₺/kg</span>
+    </div>`;
+  aylar.forEach((a,i)=>{
+    const bg=i===2?'var(--lac-a)':'#fff';
+    h+=`<div style="display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;padding:8px 10px;font-size:12px;background:${bg};border-top:1px solid #f0f0f0">
+      <span style="font-weight:${i===2?700:400}">${a.ad}</span>
+      <span style="text-align:center;font-weight:600;color:var(--lac)">${a.kg>0?a.kg.toFixed(0):'-'}</span>
+      <span style="text-align:center;color:var(--gri)">${a.sayi}</span>
+      <span style="text-align:right;color:var(--yes-d);font-weight:600">${a.ortFiyat||'-'}</span>
+    </div>`;
+  });
+
+  // Değişim hesapla
+  if(aylar[0].kg>0&&aylar[2].kg>0){
+    const degisim=((aylar[2].kg-aylar[0].kg)/aylar[0].kg*100).toFixed(1);
+    const degisimRenk=degisim>0?'var(--yes-d)':degisim<0?'var(--kir)':'var(--gri)';
+    h+=`<div style="padding:8px 10px;background:#f8f9fa;border-top:1px solid #f0f0f0;font-size:11px;color:${degisimRenk};font-weight:600;text-align:right">
+      2 aylık değişim: ${degisim>0?'+':''}${degisim}%
+    </div>`;
+  }
+  h+=`</div>`;
+  c.innerHTML=h;
+}
+
 function bhKopyala(){
   const metin=el('bh-icerik').textContent;
   navigator.clipboard.writeText(metin).then(()=>dm('✓ Kopyalandı','ok')).catch(()=>{
@@ -2962,7 +3205,7 @@ function nav(id,btn){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));el('p-'+id).classList.add('on');
   const b={'rapor':'☀ Sabah Raporu','ziyaret':'🗺 Ziyaret Takvimi','saha':'📍 Saha Kaydı','kayitlar':'📋 Kayıtlar','musteriler':'🏪 Cari Kartlar','teklif':'💼 Teklif Takip','makbuz':'🧾 Makbuz'};
   el('hb').textContent=b[id]||'Ekosa CRM';
-  if(id==='ziyaret')zvRender();if(id==='teklif')tListele();if(id==='kayitlar')kListele();if(id==='musteriler')mlRender();if(id==='makbuz')setTimeout(mkbListeYukle,300);if(id==='rapor'){alimOzetRender();perPerfRender();setTimeout(haftalikGrafikCiz,200);takipBadgeGuncelle();}
+  if(id==='ziyaret')zvRender();if(id==='teklif')tListele();if(id==='kayitlar')kListele();if(id==='musteriler')mlRender();if(id==='makbuz')setTimeout(mkbListeYukle,300);if(id==='rapor'){alimOzetRender();perPerfRender();setTimeout(haftalikGrafikCiz,200);takipBadgeGuncelle();yeniMusteriRender();takipGeldiRender();}
 }
 function mAc(id){el(id).classList.add('open');}
 function mKapat(id){el(id).classList.remove('open');}
@@ -3057,7 +3300,7 @@ if(otr){
   el('gr').textContent=otr.rol==='admin'?'Yönetici':'Personel';
   if(otr.rol==='admin')el('ybölüm').style.display='block';
   raporRender();tListele();kListele();
-  setTimeout(()=>{alimOzetRender();perPerfRender();setTimeout(haftalikGrafikCiz,300);takipBadgeGuncelle();teklifHuniRender();},500);
+  setTimeout(()=>{alimOzetRender();perPerfRender();setTimeout(haftalikGrafikCiz,300);takipBadgeGuncelle();teklifHuniRender();yeniMusteriRender();takipGeldiRender();},500);
   sync(false);stimer=setInterval(()=>sync(false),30000);
   window.addEventListener('online',()=>{dm('✓ İnternet bağlandı','ok');sync(false);});
 }
