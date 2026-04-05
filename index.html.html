@@ -822,23 +822,27 @@ async function sync(manuel){
     const r=await ft(SURL+'?action=getAll&token='+_T,15000);
     const d=await r.json();
     if(d.musteriler&&d.musteriler.length){
-      // Lokaldeki daha yeni sonZiyaret tarihlerini koru
+      const silMst=new Set(JSON.parse(localStorage.getItem('silmst')||'[]'));
       const lokalMst=JSON.parse(localStorage.getItem('m')||'[]');
-      mst=d.musteriler.map(sm=>{
-        const lm=lokalMst.find(x=>String(x.id)===String(sm.id));
-        if(!lm)return sm;
-        // Her iki tarihi karşılaştır, daha yenisini al
-        const farkS=gf(sm.sonZiyaret||'');
-        const farkL=gf(lm.sonZiyaret||'');
-        // farkL küçükse (daha yeni ziyaret) lokal tarihi kullan
-        if(farkL>=0&&farkL<farkS){
-          return {...sm, sonZiyaret:lm.sonZiyaret, sonIslem:lm.sonIslem, sonDoluluk:lm.sonDoluluk};
-        }
-        return sm;
-      });
+      mst=d.musteriler
+        .filter(sm=>!silMst.has(String(sm.id)))
+        .map(sm=>{
+          const lm=lokalMst.find(x=>String(x.id)===String(sm.id));
+          if(!lm)return sm;
+          const farkS=gf(sm.sonZiyaret||'');
+          const farkL=gf(lm.sonZiyaret||'');
+          if(farkL>=0&&farkL<farkS){
+            return {...sm,sonZiyaret:lm.sonZiyaret,sonIslem:lm.sonIslem,sonDoluluk:lm.sonDoluluk};
+          }
+          return sm;
+        });
       localStorage.setItem('m',JSON.stringify(mst));
     }
-    if(d.teklifler&&d.teklifler.length){tkl=d.teklifler;localStorage.setItem('t',JSON.stringify(tkl));}
+    if(d.teklifler&&d.teklifler.length){
+      const silTkl=new Set(JSON.parse(localStorage.getItem('siltkl')||'[]'));
+      tkl=d.teklifler.filter(t=>!silTkl.has(String(t.id)));
+      localStorage.setItem('t',JSON.stringify(tkl));
+    }
     if(d.ziyaretler&&d.ziyaretler.length){
       // Sheets tam kaynak - sadece son 2 dakika içinde lokal eklenen kayıtları koru
       const shIds=new Set(d.ziyaretler.map(z=>String(z.id)));
@@ -1475,7 +1479,11 @@ function tAraTemizle(){el('tara').value='';el('tarat').style.display='none';tAra
 function tSil(){
   if(!duzId)return;
   if(!confirm('Bu teklif silinsin mi?'))return;
-  tkl=tkl.filter(t=>t.id!==duzId);
+  // Silinen ID'yi kalıcı olarak kaydet - sync'te geri gelmesin
+  const silTkl=JSON.parse(localStorage.getItem('siltkl')||'[]');
+  silTkl.push(String(duzId));
+  localStorage.setItem('siltkl',JSON.stringify(silTkl));
+  tkl=tkl.filter(t=>String(t.id)!==String(duzId));
   localStorage.setItem('t',JSON.stringify(tkl));
   shSil('delete',duzId);
   mKapat('tm');tListele();
