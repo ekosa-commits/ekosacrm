@@ -543,7 +543,10 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
   <div class="modal">
     <div class="mttl"><span id="tmttl">Yeni Teklif</span><button class="mkapat" onclick="mKapat('tm')">×</button></div>
     <div class="fg"><label>İşletme Adı *</label><input type="text" id="tis" placeholder="İşletme adı..."></div>
-    <div class="fg"><label>İl *</label><select id="til"><option value="">— Seçin —</option></select></div>
+    <div class="fg2">
+      <div><label>İl *</label><select id="til"><option value="">— Seçin —</option></select></div>
+      <div><label>İlçe</label><input type="text" id="tilce" placeholder="İlçe/Bölge..."></div>
+    </div>
     <div class="bh">Fiyatlar (₺/Litre)</div>
     <div class="fg3"><div><label>Nakit</label><input type="number" id="tna" placeholder="—" step="0.25" min="0"></div><div><label>Yakıt K.</label><input type="number" id="tya" placeholder="—" step="0.25" min="0"></div><div><label>Faturalı</label><input type="number" id="tfa" placeholder="—" step="0.25" min="0"></div></div>
     <div class="bh">Aşama *</div>
@@ -2484,69 +2487,66 @@ function mkbdKaydet(){
 function yeniMusteriRender(){
   const c=el('yeni-musteri-ozet');if(!c)return;
   const bugunD=new Date();bugunD.setHours(0,0,0,0);
+
   // Bu haftanın başı (Pazartesi)
   const pzt=new Date(bugunD);
   pzt.setDate(bugunD.getDate()-bugunD.getDay()+1);
+  const pztMs=pzt.getTime();
+
   // Geçen haftanın başı
   const gecenPzt=new Date(pzt);gecenPzt.setDate(pzt.getDate()-7);
+  const gecenPztMs=gecenPzt.getTime();
 
-  // Bu hafta ilk ziyareti olan işletmeler
-  // Mantık: zvr'de bu hafta kaydı var ama bu haftadan önce kaydı YOK olan işletmeler
-  const buHaftaIds=new Set();
-  const eskiIds=new Set();
-  zvr.forEach(z=>{
-    if(!z.musteriId||!z.tarih)return;
-    const t=z.tarih.includes('T')?new Date(z.tarih):new Date(z.tarih.split('.').reverse().join('-'));
-    if(t>=pzt) buHaftaIds.add(String(z.musteriId));
-    else eskiIds.add(String(z.musteriId));
+  // id = Date.now() → timestamp olarak kaydedilen işletmeler
+  // Bu hafta eklenenler: id bu haftanın başından büyük
+  const buHafta=mst.filter(m=>{
+    const id=parseInt(m.id)||0;
+    return id>=pztMs;
   });
-  // Sadece bu hafta ilk kez görünen işletmeler
-  const yeniIds=[...buHaftaIds].filter(id=>!eskiIds.has(id));
-  const yeniMusteriler=yeniIds.map(id=>mst.find(m=>String(m.id)===id)).filter(Boolean);
 
-  // Geçen hafta yenileri (karşılaştırma için)
-  const gecenHaftaIds=new Set();const oncekiIds=new Set();
-  zvr.forEach(z=>{
-    if(!z.musteriId||!z.tarih)return;
-    const t=z.tarih.includes('T')?new Date(z.tarih):new Date(z.tarih.split('.').reverse().join('-'));
-    if(t>=gecenPzt&&t<pzt) gecenHaftaIds.add(String(z.musteriId));
-    else if(t<gecenPzt) oncekiIds.add(String(z.musteriId));
+  // Geçen hafta eklenenler: karşılaştırma için
+  const gecenHafta=mst.filter(m=>{
+    const id=parseInt(m.id)||0;
+    return id>=gecenPztMs&&id<pztMs;
   });
-  const gecenYeniSayi=[...gecenHaftaIds].filter(id=>!oncekiIds.has(id)).length;
 
-  const fark=yeniMusteriler.length-gecenYeniSayi;
-  const farkTxt=fark>0?`<span style="color:var(--yes-d);font-size:11px;font-weight:600">▲ ${fark} geçen haftaya göre</span>`:
-                fark<0?`<span style="color:var(--kir);font-size:11px;font-weight:600">▼ ${Math.abs(fark)} geçen haftaya göre</span>`:
-                `<span style="color:var(--gri);font-size:11px">= Geçen hafta ile aynı</span>`;
+  const fark=buHafta.length-gecenHafta.length;
+  const farkTxt=fark>0
+    ?`<span style="color:var(--yes-d);font-size:11px;font-weight:600">▲ ${fark} geçen haftaya göre</span>`
+    :fark<0
+    ?`<span style="color:var(--kir);font-size:11px;font-weight:600">▼ ${Math.abs(fark)} geçen haftaya göre</span>`
+    :`<span style="color:var(--gri);font-size:11px">= Geçen hafta ile aynı</span>`;
 
-  let h=`<div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+  let h=`<div style="display:flex;align-items:center;gap:14px;margin-bottom:${buHafta.length?12:0}px">
     <div style="text-align:center;background:var(--yes-a);border-radius:10px;padding:12px 18px">
-      <div style="font-size:32px;font-weight:800;color:var(--yes-d)">${yeniMusteriler.length}</div>
+      <div style="font-size:32px;font-weight:800;color:var(--yes-d)">${buHafta.length}</div>
       <div style="font-size:10px;color:var(--gri)">Bu Hafta</div>
     </div>
     <div>
-      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">Yeni İşletme</div>
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">Yeni Eklenen Cari</div>
       ${farkTxt}
-      <div style="font-size:11px;color:var(--gri);margin-top:3px">Geçen hafta: ${gecenYeniSayi}</div>
+      <div style="font-size:11px;color:var(--gri);margin-top:3px">Geçen hafta: ${gecenHafta.length}</div>
     </div>
   </div>`;
 
-  if(yeniMusteriler.length){
-    h+=yeniMusteriler.map(m=>`
+  if(buHafta.length){
+    // En yeni önce
+    const sirali=[...buHafta].sort((a,b)=>parseInt(b.id)-parseInt(a.id));
+    h+=sirali.map(m=>`
       <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f5f5f5">
         <div>
           <div style="font-size:13px;font-weight:600">${m.isim}</div>
           <div style="font-size:11px;color:var(--gri)">${m.il||''}${m.bolge?' · '+m.bolge:''}</div>
+          <div style="font-size:10px;color:var(--gri)">${new Date(parseInt(m.id)).toLocaleDateString('tr-TR',{weekday:'short',day:'numeric',month:'short'})}</div>
         </div>
         <button onclick="rotaGit(${m.id})" style="background:var(--lac-a);color:var(--lac);border:none;padding:5px 9px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Saha</button>
       </div>`).join('');
   } else {
-    h+='<div style="font-size:12px;color:var(--gri);text-align:center;padding:8px 0">Bu hafta yeni işletme yok</div>';
+    h+='<div style="font-size:12px;color:var(--gri);text-align:center;padding:8px 0">Bu hafta yeni cari eklenmedi</div>';
   }
   c.innerHTML=h;
 }
 
-//=== TAKİP TARİHİ GELMİŞ TEKLİFLER ===
 function takipGeldiRender(){
   const c=el('takip-geldi-liste');const kart=el('takip-geldi-kart');
   if(!c)return;
@@ -2856,7 +2856,7 @@ function tListele(){
     const takipYaklasan=t.takipTarihi&&t.takipTarihi>bugunISO;
     return`<div class="tk ${acl[t.asama]||''}">
       <div class="tkh"><div class="tki">${t.isletme}</div><span class="tkt">${t.tarih||''}</span></div>
-      <div class="tkil">${t.il||''}${t.personel?' · '+t.personel:''}</div>
+      <div class="tkil">${t.il||''}${t.ilce?' / '+t.ilce:''}${t.personel?' · '+t.personel:''}</div>
       <div class="tkf">
         ${t.nakit?`<span class="tf tn">N:${t.nakit}₺</span>`:''}
         ${t.yakit?`<span class="tf ty">Y:${t.yakit}₺</span>`:''}
@@ -2891,20 +2891,20 @@ function tKaydet(){
   }
   if(duzId){
     const idx=tkl.findIndex(t=>t.id===duzId);
-    if(idx!==-1){tkl[idx]={...tkl[idx],isletme:is,il,nakit:na||'',yakit:ya||'',faturali:fa||'',asama:sAsama,rakipFirma:el('trf').value.trim(),rakipFiyat:el('trp').value||'',not:el('tnot').value.trim()};shG('update',tkl[idx]);dm('✓ Güncellendi!','ok');}
+    if(idx!==-1){tkl[idx]={...tkl[idx],isletme:is,il,ilce:el('tilce').value.trim(),nakit:na||'',yakit:ya||'',faturali:fa||'',asama:sAsama,rakipFirma:el('trf').value.trim(),rakipFiyat:el('trp').value||'',not:el('tnot').value.trim()};shG('update',tkl[idx]);dm('✓ Güncellendi!','ok');}
     duzId=null;el('tmttl').textContent='Yeni Teklif';el('tkbtn').textContent='Teklifi Kaydet';
   }else{
-    const t={id:Date.now(),tarih:bug(),isletme:is,il,personel:per,nakit:na||'',yakit:ya||'',faturali:fa||'',asama:sAsama,rakipFirma:el('trf').value.trim(),rakipFiyat:el('trp').value||'',takipTarihi:el('ttakip').value||'',not:el('tnot').value.trim()};
+    const t={id:Date.now(),tarih:bug(),isletme:is,il,ilce:el('tilce').value.trim(),personel:per,nakit:na||'',yakit:ya||'',faturali:fa||'',asama:sAsama,rakipFirma:el('trf').value.trim(),rakipFiyat:el('trp').value||'',takipTarihi:el('ttakip').value||'',not:el('tnot').value.trim()};
     tkl.unshift(t);shG('add',t);dm('✓ Teklif kaydedildi!','ok');
   }
   localStorage.setItem('t',JSON.stringify(tkl));mKapat('tm');tListele();
-  ['tis','tna','tya','tfa','trf','trp','tnot','ttakip'].forEach(id=>el(id).value='');el('til').value='';if(el('tsil-btn'))el('tsil-btn').style.display='none';
+  ['tis','tna','tya','tfa','trf','trp','tnot','ttakip','tilce'].forEach(id=>el(id).value='');el('til').value='';if(el('tsil-btn'))el('tsil-btn').style.display='none';
 }
 
 function tDuz(id){
   const t=tkl.find(x=>x.id===id);if(!t)return;
   duzId=id;el('tmttl').textContent='Düzenle';el('tkbtn').textContent='Güncelle';
-  el('tis').value=t.isletme||'';el('til').value=t.il||'';
+  el('tis').value=t.isletme||'';el('til').value=t.il||'';el('tilce').value=t.ilce||'';
   el('tna').value=t.nakit||'';el('tya').value=t.yakit||'';el('tfa').value=t.faturali||'';
   el('trf').value=t.rakipFirma||'';el('trp').value=t.rakipFiyat||'';
   el('ttakip').value=t.takipTarihi||'';el('tnot').value=t.not||'';
