@@ -1485,7 +1485,7 @@ function tSil(){
   localStorage.setItem('siltkl',JSON.stringify(silTkl));
   tkl=tkl.filter(t=>String(t.id)!==String(duzId));
   localStorage.setItem('t',JSON.stringify(tkl));
-  shSil('delete',duzId);
+  shSil('deleteTeklif',duzId);
   mKapat('tm');tListele();
   dm('✓ Teklif silindi','ok');
   duzId=null;
