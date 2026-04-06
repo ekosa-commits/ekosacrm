@@ -288,6 +288,11 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
   <div class="card"><div class="ct">📍 Bugün Ziyaret Edilecekler</div><div id="rbl"><div class="bos">Yükleniyor...</div></div></div>
   <!-- Geciken -->
   <div class="card"><div class="ct">⚠ Geciken Ziyaretler</div><div id="rgl"><div class="bos">Yükleniyor...</div></div></div>
+  <!-- Sözleşme Uyarısı -->
+  <div class="card" id="sozlesme-uyari-kart" style="display:none">
+    <div class="ct">📋 Sözleşme Bitiş Uyarısı</div>
+    <div id="sozlesme-uyari-liste"></div>
+  </div>
   <!-- Takip -->
   <div class="card" id="takip-kart" style="display:none"><div class="ct">⏰ Takip Edilecek Teklifler</div><div id="rtakip"></div></div>
   <!-- Alım Özeti -->
@@ -578,6 +583,7 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     <div class="bh">Fiyatlar (₺/L)</div>
     <div class="fg3"><div><label>Nakit</label><input type="number" id="ymna" placeholder="—" step="0.25" min="0"></div><div><label>Yakıt K.</label><input type="number" id="ymya" placeholder="—" step="0.25" min="0"></div><div><label>Faturalı</label><input type="number" id="ymfa" placeholder="—" step="0.25" min="0"></div></div>
     <div class="fg"><label>Yetkili / Not</label><input type="text" id="ymnot" placeholder="Yetkili kişi, telefon..."></div>
+    <div class="fg"><label>📋 Sözleşme Bitiş Tarihi</label><input type="date" id="ymsoz" placeholder="Sözleşme bitiş..."></div>
     <button class="btn btn-lac" onclick="ymKaydet()">Ekle & Seç</button>
     <div style="height:8px"></div>
   </div>
@@ -638,7 +644,8 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     <div class="fg3"><div><label>Nakit</label><input type="number" id="mdna" placeholder="—" step="0.25" min="0"></div><div><label>Yakıt K.</label><input type="number" id="mdya" placeholder="—" step="0.25" min="0"></div><div><label>Faturalı</label><input type="number" id="mdfa" placeholder="—" step="0.25" min="0"></div></div>
     <div class="fg"><label>Yakıt Kart No</label><input type="text" id="mdkartno" placeholder="Kart numarası..." inputmode="numeric"></div>
     <div class="fg"><label>Yetkili / Tel</label><input type="text" id="mdyet" placeholder="Yetkili kişi, telefon..."></div>
-    <div class="fg" style="margin-bottom:14px"><label>Not</label><input type="text" id="mdnot" placeholder="Özel not..."></div>
+    <div class="fg"><label>Not</label><input type="text" id="mdnot" placeholder="Özel not..."></div>
+    <div class="fg" style="margin-bottom:14px"><label>📋 Sözleşme Bitiş Tarihi</label><input type="date" id="mdsoz"></div>
     <button class="btn btn-lac" style="margin-bottom:8px" onclick="mdKaydet()">💾 Güncelle</button>
     <button class="btn btn-gri" style="margin-bottom:8px" id="md-pasif-btn" onclick="mdPasifToggle()">⏸ Pasife Al</button>
     <button class="btn btn-kir" onclick="mdSil()">🗑 Müşteriyi Sil</button>
@@ -858,7 +865,7 @@ async function sync(manuel){
     if(d.kullanicilar){kul=d.kullanicilar;localStorage.setItem('k',JSON.stringify(kul));}
     el('sd').className='sync-dot';
     ddDoldur();raporRender();zvRender();tListele();kListele();
-  setTimeout(()=>{alimOzetRender();perPerfRender();setTimeout(haftalikGrafikCiz,300);takipBadgeGuncelle();teklifHuniRender();yeniMusteriRender();takipGeldiRender();},600);
+  setTimeout(()=>{alimOzetRender();perPerfRender();setTimeout(haftalikGrafikCiz,300);takipBadgeGuncelle();teklifHuniRender();yeniMusteriRender();takipGeldiRender();sozlesmeUyariRender();},600);
     if(manuel)dm('✓ Güncellendi — '+mst.length+' işletme','ok');
   }catch(e){
     el('sd').className='sync-dot hata';
@@ -970,6 +977,7 @@ function raporRender(){
   // Kalan güne göre sırala (en acil önce)
   g.sort((a,b)=>a.ka-b.ka);b.sort((a,b)=>a.ka-b.ka);
   el('rgl').innerHTML=g.length?g.slice(0,15).map(m=>ziKart(m,'acil',Math.abs(m.ka)+' gün gecikti')).join(''):'<div class="bos" style="color:var(--yes-d)">✓ Geciken yok!</div>';
+  sozlesmeUyariRender();
 }
 
 function ziKart(m,cls,et){
@@ -1219,7 +1227,7 @@ function ymKaydet(){
   if(!is){dm('İşletme adı boş!','err');el('ymis').focus();return;}
   if(!il){dm('İl seçin!','err');return;}
   if(!el('ymar').value){dm('Ziyaret aralığı girilmeli!','err');el('ymar').focus();return;}
-  const y={id:Date.now(),isim:is,il,bolge:el('ymbo').value.trim(),adres:el('ymad').value.trim(),varil:el('ymva').value,ziyaretAraligi:el('ymar').value,nakitFiyat:el('ymna').value,yakitFiyat:el('ymya').value,faturaliFiyat:el('ymfa').value,notlar:el('ymnot').value.trim(),aktif:true,sonZiyaret:'',sonIslem:'',sonDoluluk:''};
+  const y={id:Date.now(),isim:is,il,bolge:el('ymbo').value.trim(),adres:el('ymad').value.trim(),varil:el('ymva').value,ziyaretAraligi:el('ymar').value,nakitFiyat:el('ymna').value,yakitFiyat:el('ymya').value,faturaliFiyat:el('ymfa').value,notlar:el('ymnot').value.trim(),sozlesmeBitis:el('ymsoz').value||'',aktif:true,sonZiyaret:'',sonIslem:'',sonDoluluk:''};
   mst.unshift(y);localStorage.setItem('m',JSON.stringify(mst));shG('addMusteri',y);mKapat('ymm');mstSec(y);
   ['ymis','ymbo','ymad','ymva','ymar','ymna','ymya','ymfa','ymkartno','ymnot'].forEach(id=>el(id).value='');el('ymil').value='';
   dm('✓ '+is+' eklendi ve seçildi!','ok');
@@ -1346,9 +1354,13 @@ function zDuz(id){
     sDol=String(z.doluluk||'50');
   }
   el('snot').value=z.notlar||'';
+  // Düzeltme modunda kayıt sonrası alanı gizle (yeni kayıt değil)
+  el('saha-islemler').style.display='none';
   const kaydetBtn=document.querySelector('#p-saha .btn-yes');
   if(kaydetBtn){kaydetBtn.textContent='✏️ Ziyareti Güncelle';kaydetBtn.style.background='var(--tur)';}
+  // Saha'ya geç ve scroll to top
   nav('saha',document.querySelectorAll('.nb')[2]);
+  setTimeout(()=>window.scrollTo({top:0,behavior:'smooth'}),100);
   dm("Düzenleme modu — Güncelle butonuna basın","info");
 }
 
@@ -1362,6 +1374,7 @@ function mstDuz(id){
   el('mdna').value=m.nakitFiyat||'';el('mdya').value=m.yakitFiyat||'';el('mdfa').value=m.faturaliFiyat||'';
   el('mdyet').value=m.yetkiliAd||m.notlar||'';el('mdnot').value=m.notlar||'';
   if(el('mdkartno'))el('mdkartno').value=m.yakitKartNo||'';
+  if(el('mdsoz'))el('mdsoz').value=m.sozlesmeBitis||'';
   // İl seçeneklerini doldur
   const s=el('mdil');while(s.options.length>1)s.remove(1);
   ill.forEach(il=>{const o=document.createElement('option');o.value=il;o.textContent=il;s.appendChild(o);});
@@ -1386,7 +1399,7 @@ function mdKaydet(){
       ziyaretAraligi:el('mdar').value,nakitFiyat:el('mdna').value,
       yakitFiyat:el('mdya').value,faturaliFiyat:el('mdfa').value,yakitKartNo:el('mdkartno').value.trim(),
       yetkiliAd:el('mdyet').value.trim(),notlar:el('mdnot').value.trim(),
-      aktif:mst[idx].aktif!==false
+      sozlesmeBitis:el('mdsoz')?.value||'',aktif:mst[idx].aktif!==false
     };
     localStorage.setItem('m',JSON.stringify(mst));
     shG('updateMusteri',mst[idx]);
@@ -2154,6 +2167,11 @@ function smkbYazdir(){
   }
   
   // Sheets'e kaydet
+  // Bekleyen iptal varsa önce eski makbuzu sil
+  if(bekleyenIptalMkbId){
+    fetch(SURL+'?action=deleteMakbuz&id='+encodeURIComponent(bekleyenIptalMkbId)+'&token='+_T,{redirect:'follow'}).catch(()=>{});
+    bekleyenIptalMkbId=null;
+  }
   shG('addMakbuz',{id:Date.now(),tarih:tar,makbuzNo:no,adSoyad:ad,tc,miktar:mk,miktarYazi:yz,aciklama:'Bitkisel Atık Yağ Bedeli',isletme:sMstSon?sMstSon.isim:'',personel:otr?.adSoyad||''});
   
   // Termal çıktı
@@ -2351,6 +2369,7 @@ function odemeSec_Temizle(){}
 
 //=== MAKBUZ LİSTE, FİLTRE & DÜZENLEME ===
 let mkbListesi=[];
+let bekleyenIptalMkbId=null; // mkbdKaydet'ten smkbYazdir'a geçirilen eski makbuz ID'si
 
 async function mkbListeYukle(){
   const liste=el('mkb-liste');
@@ -2469,8 +2488,9 @@ function mkbdKaydet(){
   const eskiId=el('mkbd-eski-id').value;
   if(!ad){dm('Ad Soyad girin!','err');return;}
   if(!mk){dm('Miktar girin!','err');return;}
+  // Eski makbuzu HENÜZ silme - smkbYazdir başarıyla yazdırınca silecek
   if(eskiId){
-    fetch(SURL+'?action=deleteMakbuz&id='+encodeURIComponent(eskiId)+'&token='+_T,{redirect:'follow'}).catch(()=>{});
+    bekleyenIptalMkbId=eskiId;
     mkbListesi=mkbListesi.filter(x=>String(x.id)!==String(eskiId));
   }
   el('smkb-ad').value=ad;el('smkb-tc').value=tc;el('smkb-mk').value=mk;
@@ -2479,7 +2499,7 @@ function mkbdKaydet(){
   el('smkb-no').value='MKB-'+String(mkbNo).padStart(4,'0');
   el('smkb-tar').value=bug();
   mKapat('mkbd-m');mAc('saha-mkb-m');
-  dm('Eski makbuz iptal edildi — yeni makbuzu yazdırın','info');
+  dm('Formu kontrol edin — Yazdır butonuna basın','info');
 }
 
 
@@ -2702,6 +2722,71 @@ function trendCiz(musteriId){
   }
   h+=`</div>`;
   c.innerHTML=h;
+}
+
+
+//=== SÖZLEŞME BİTİŞ UYARISI ===
+function sozlesmeUyariRender(){
+  const kart=el('sozlesme-uyari-kart');
+  const liste=el('sozlesme-uyari-liste');
+  if(!kart||!liste)return;
+
+  const bugun=new Date();bugun.setHours(0,0,0,0);
+  const uyariGun=30; // 30 gün kala uyar
+
+  // Sözleşme bitiş tarihi olan ve 30 gün içinde bitecek işletmeler
+  const uyarilar=[];
+  mst.filter(m=>m.aktif!==false&&m.sozlesmeBitis).forEach(m=>{
+    const bitis=new Date(m.sozlesmeBitis);
+    if(isNaN(bitis.getTime()))return;
+    bitis.setHours(0,0,0,0);
+    const kalanGun=Math.ceil((bitis-bugun)/86400000);
+    if(kalanGun<=uyariGun){
+      uyarilar.push({...m,kalanGun,bitis:m.sozlesmeBitis});
+    }
+  });
+
+  if(!uyarilar.length){kart.style.display='none';return;}
+  kart.style.display='block';
+
+  // İl bazlı grupla
+  const ilGruplari={};
+  uyarilar.forEach(m=>{
+    const il=m.il||'Diğer';
+    if(!ilGruplari[il])ilGruplari[il]=[];
+    ilGruplari[il].push(m);
+  });
+
+  let h='';
+  // Toplam özet
+  const gecmis=uyarilar.filter(m=>m.kalanGun<0).length;
+  const bugunBiten=uyarilar.filter(m=>m.kalanGun===0).length;
+  const yaklasan=uyarilar.filter(m=>m.kalanGun>0).length;
+
+  h+=`<div style="display:flex;gap:8px;margin-bottom:12px">
+    ${gecmis?`<div style="background:var(--kir-a);border-radius:8px;padding:8px 12px;flex:1;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--kir)">${gecmis}</div><div style="font-size:10px;color:var(--kir)">Süresi Doldu</div></div>`:''}
+    ${bugunBiten?`<div style="background:#FEF9E7;border-radius:8px;padding:8px 12px;flex:1;text-align:center"><div style="font-size:18px;font-weight:700;color:#D4AC0D">${bugunBiten}</div><div style="font-size:10px;color:#856404">Bugün Bitiyor</div></div>`:''}
+    ${yaklasan?`<div style="background:var(--tur-a);border-radius:8px;padding:8px 12px;flex:1;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--tur)">${yaklasan}</div><div style="font-size:10px;color:var(--tur)">${uyariGun} Gün İçinde</div></div>`:''}
+  </div>`;
+
+  // İl bazlı liste
+  Object.entries(ilGruplari).sort().forEach(([il,isletmeler])=>{
+    h+=`<div style="font-size:11px;font-weight:700;color:var(--lac);text-transform:uppercase;letter-spacing:.5px;padding:6px 0 4px;border-bottom:1px solid #f0f0f0;margin-bottom:6px">${il} (${isletmeler.length})</div>`;
+    isletmeler.sort((a,b)=>a.kalanGun-b.kalanGun).forEach(m=>{
+      const renk=m.kalanGun<0?'var(--kir)':m.kalanGun===0?'#D4AC0D':'var(--tur)';
+      const bg=m.kalanGun<0?'var(--kir-a)':m.kalanGun===0?'#FEF9E7':'var(--tur-a)';
+      const etiket=m.kalanGun<0?`${Math.abs(m.kalanGun)} gün geçti`:m.kalanGun===0?'Bugün bitiyor':`${m.kalanGun} gün kaldı`;
+      h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:${bg};border-radius:8px;margin-bottom:5px">
+        <div>
+          <div style="font-size:13px;font-weight:600">${m.isim}</div>
+          <div style="font-size:11px;color:var(--gri)">${m.bolge?m.bolge+' · ':''}</div>
+          <div style="font-size:11px;font-weight:600;color:${renk}">📅 ${m.bitis} — ${etiket}</div>
+        </div>
+        <button onclick="mstDuz(${m.id})" style="background:#fff;color:var(--lac);border:1px solid var(--lac);padding:5px 9px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;margin-left:8px">Güncelle</button>
+      </div>`;
+    });
+  });
+  liste.innerHTML=h;
 }
 
 function bhKopyala(){
@@ -3251,11 +3336,13 @@ function ft2(t){
 }
 
 function saatStr2(t){
-  // Saat değerini düzgün formata çevir
   if(!t)return'';
+  // HH:MM formatı ise direkt döndür
+  if(typeof t==='string'&&/^\d{1,2}:\d{2}$/.test(t))return t;
+  // ISO string ise yerel saate çevir (UTC değil)
   if(typeof t==='string'&&t.includes('T')){
     const d=new Date(t);
-    return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0');
+    return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
   }
   return String(t);
 }
@@ -3308,7 +3395,7 @@ if(otr){
   el('gr').textContent=otr.rol==='admin'?'Yönetici':'Personel';
   if(otr.rol==='admin')el('ybölüm').style.display='block';
   raporRender();tListele();kListele();
-  setTimeout(()=>{alimOzetRender();perPerfRender();setTimeout(haftalikGrafikCiz,300);takipBadgeGuncelle();teklifHuniRender();yeniMusteriRender();takipGeldiRender();},500);
+  setTimeout(()=>{alimOzetRender();perPerfRender();setTimeout(haftalikGrafikCiz,300);takipBadgeGuncelle();teklifHuniRender();yeniMusteriRender();takipGeldiRender();sozlesmeUyariRender();},500);
   sync(false);stimer=setInterval(()=>sync(false),30000);
   window.addEventListener('online',()=>{dm('✓ İnternet bağlandı','ok');sync(false);});
 }
