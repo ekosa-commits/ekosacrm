@@ -615,6 +615,29 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
   </div>
 </div>
 
+<!-- MODAL: ÖDEME DÜZENLE -->
+<div class="mb" id="odeme-duz-m">
+  <div class="modal">
+    <div class="mttl"><span>💳 Ödeme Düzenle</span><button class="mkapat" onclick="mKapat('odeme-duz-m')">×</button></div>
+    <input type="hidden" id="odeme-duz-id">
+    <div style="background:var(--lac-a);border-radius:8px;padding:8px 12px;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;color:var(--lac)" id="odeme-duz-isletme">—</div>
+      <div style="font-size:11px;color:var(--gri)" id="odeme-duz-tarih">—</div>
+    </div>
+    <div class="bh">Ödeme Türü</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px">
+      <button class="ob on" id="oduz-nakit" onclick="oduzTurSec('Nakit',this)">💵 Nakit</button>
+      <button class="ob" id="oduz-yakit" onclick="oduzTurSec('Yakıt Kartı',this)">⛽ Yakıt K.</button>
+      <button class="ob" id="oduz-havale" onclick="oduzTurSec('Havale',this)">🏦 Havale</button>
+    </div>
+    <div class="fg"><label>Ödeme Tutarı (₺) *</label><input type="number" id="odeme-duz-tutar" placeholder="0.00" inputmode="decimal" step="0.01"></div>
+    <div class="fg" style="margin-bottom:14px"><label>Açıklama</label><input type="text" id="odeme-duz-aciklama" placeholder="Fatura tarihi, dönem..."></div>
+    <button class="btn btn-lac" onclick="oduzKaydet()" style="margin-bottom:8px">💾 Güncelle</button>
+    <button class="btn btn-kir" onclick="oduzSil()">🗑 Ödemeyi Sil</button>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
 <!-- MODAL: YENİ KULLANICI -->
 <div class="mb" id="ykm">
   <div class="modal">
@@ -1168,7 +1191,7 @@ async function zvKaydet(){
     else{zvr.unshift(z);}
     // Sheets'ten eski kaydı sil, yenisini ekle
     shSil('deleteZiyaret',duzZiyaretId);
-    setTimeout(()=>shG('addZiyaret',z),500);
+    setTimeout(()=>shG('addZiyaret',z),1000); // 1sn bekle - silme tamamlansın
     duzZiyaretId=null;
     const kaydetBtn=document.querySelector('#p-saha .btn-yes');
     if(kaydetBtn){kaydetBtn.textContent='📍 Ziyareti Kaydet & Gönder';kaydetBtn.style.background='var(--yes)';}
@@ -1263,16 +1286,18 @@ function kListele(){
   const c=el('kl');if(!bk.length){c.innerHTML='<div class="bos">Bugün henüz kayıt yok</div>';return;}
   c.innerHTML=bk.map(z=>{
     const al=z.islem==='Alım Yapıldı';
-    const bc=al?(z.odemeTuru==='Nakit'?'bn':z.odemeTuru==='Yakıt Kartı'?'by':'bf'):'ba';
-    return`<div class="kk ${al?'':'al'}">
-      <div class="kh"><div class="kn">${z.musteriAdi}</div><div class="ks">${saatStr2(z.saat)||''}</div></div>
+    const odeme=z.islem==='Ödeme';
+    const bc=al?(z.odemeTuru==='Nakit'?'bn':z.odemeTuru==='Yakıt Kartı'?'by':'bf'):odeme?'bf':'ba';
+    const etiket=al?z.odemeTuru:odeme?('💳 Ödeme: '+parseFloat(z.tutar||0).toFixed(2)+'₺ ('+z.odemeTuru+')'):'Alım Yapılmadı'+(z.doluluk?' %'+z.doluluk:'');
+    const sol=odeme?'💳':''
+    return`<div class="kk" style="border-left-color:${al?'var(--yes)':odeme?'#6B3FA0':'var(--kir)'}">
+      <div class="kh"><div class="kn">${sol}${z.musteriAdi}</div><div class="ks">${saatStr2(z.saat)||''}</div></div>
       <div class="kd">${z.il||''}${z.personel?' · '+z.personel:''}</div>
       ${al?`<div class="kd">${z.kg} kg${z.tutar?' · '+z.tutar+'₺':''}</div>`:''}
-      <span class="kb ${bc}">${al?z.odemeTuru:'Alım Yapılmadı'+(z.doluluk?' %'+z.doluluk:'')}</span>
-      ${al&&z.odemeDurum==='bekliyor'?'<span class="kb" style="background:#FEF0E7;color:#E67E22;margin-left:4px">⏳ Ödeme Bekliyor</span>':''}
+      <span class="kb ${bc}">${etiket}</span>
       ${z.notlar?`<div class="kd" style="font-style:italic;margin-top:3px">${z.notlar}</div>`:''}
       <div style="display:flex;gap:6px;margin-top:6px">
-        <button class="btn-sm" style="background:var(--lac-a);color:var(--lac);flex:1" onclick="zDuz(${z.id})">✎ Düzenle</button>
+        <button class="btn-sm" style="background:var(--lac-a);color:var(--lac);flex:1" onclick="${odeme?'odemeDuz':'zDuz'}(${z.id})">✎ Düzenle</button>
         <button class="btn-sm" style="background:var(--kir-a);color:var(--kir)" onclick="zSil(${z.id})">🗑</button>
       </div>
     </div>`;
@@ -1330,6 +1355,8 @@ function zSil(id){
 
 function zDuz(id){
   const z=zvr.find(x=>String(x.id)===String(id));if(!z)return;
+  // Ödeme kaydıysa ayrı modal aç
+  if(z.islem==='Ödeme'){odemeDuz(id);return;}
   duzZiyaretId=id;
   const m=mst.find(x=>String(x.id)===String(z.musteriId));
   if(m)mstSec(m);
@@ -2351,6 +2378,8 @@ function odemeKaydet(){
   if(el('odeme-aciklama'))el('odeme-aciklama').value='';
   dm('✓ Ödeme kaydedildi — '+m.isim+' — '+tutar.toFixed(2)+'₺','ok');
   kListele();
+  // Kayıtlar'a git - personel görebilsin
+  setTimeout(()=>nav('kayitlar',document.querySelectorAll('.nb')[3]),300);
 }
 
 function odemeIsletmeAra(v){}
@@ -2778,6 +2807,73 @@ function sozlesmeUyariRender(){
     });
   });
   liste.innerHTML=h;
+}
+
+
+//=== ÖDEME DÜZENLE ===
+let oduzTurSecilen = 'Nakit';
+
+function odemeDuz(id){
+  const z=zvr.find(x=>String(x.id)===String(id));
+  if(!z||z.islem!=='Ödeme'){dm('Ödeme kaydı bulunamadı','err');return;}
+  el('odeme-duz-id').value=id;
+  el('odeme-duz-isletme').textContent=z.musteriAdi+(z.il?' · '+z.il:'');
+  el('odeme-duz-tarih').textContent=z.tarih+(z.saat?' · '+saatStr2(z.saat):'');
+  el('odeme-duz-tutar').value=z.tutar||'';
+  el('odeme-duz-aciklama').value=z.notlar||'';
+  // Ödeme türü seç
+  oduzTurSecilen=z.odemeTuru||'Nakit';
+  ['oduz-nakit','oduz-yakit','oduz-havale'].forEach(bid=>{
+    const b=el(bid);if(b)b.classList.remove('on');
+  });
+  const turMap={'Nakit':'oduz-nakit','Yakıt Kartı':'oduz-yakit','Havale':'oduz-havale'};
+  const aktif=el(turMap[oduzTurSecilen]);
+  if(aktif)aktif.classList.add('on');
+  mAc('odeme-duz-m');
+}
+
+function oduzTurSec(tur,btn){
+  oduzTurSecilen=tur;
+  ['oduz-nakit','oduz-yakit','oduz-havale'].forEach(bid=>{
+    const b=el(bid);if(b)b.classList.remove('on');
+  });
+  if(btn)btn.classList.add('on');
+}
+
+function oduzKaydet(){
+  const id=el('odeme-duz-id').value;
+  const tutar=parseFloat(el('odeme-duz-tutar').value)||0;
+  if(!tutar){dm('Tutar girin!','err');el('odeme-duz-tutar').focus();return;}
+  const idx=zvr.findIndex(x=>String(x.id)===String(id));
+  if(idx===-1){dm('Kayıt bulunamadı!','err');return;}
+  const eskiZ={...zvr[idx]};
+  // Güncelle
+  zvr[idx]={...zvr[idx],
+    odemeTuru:oduzTurSecilen,
+    tutar:tutar.toString(),
+    notlar:el('odeme-duz-aciklama').value.trim()
+  };
+  localStorage.setItem('z',JSON.stringify(zvr));
+  // Sheets: eski sil, yeni ekle
+  shSil('deleteZiyaret',id);
+  setTimeout(()=>shG('addZiyaret',zvr[idx]),500);
+  mKapat('odeme-duz-m');
+  kListele();
+  dm('✓ Ödeme güncellendi — '+tutar.toFixed(2)+'₺','ok');
+}
+
+function oduzSil(){
+  const id=el('odeme-duz-id').value;
+  if(!confirm('Bu ödeme kaydı silinsin mi?'))return;
+  // silzvr listesine ekle
+  const silZvr=JSON.parse(localStorage.getItem('silzvr')||'[]');
+  if(!silZvr.includes(String(id))){silZvr.push(String(id));localStorage.setItem('silzvr',JSON.stringify(silZvr));}
+  zvr=zvr.filter(x=>String(x.id)!==String(id));
+  localStorage.setItem('z',JSON.stringify(zvr));
+  shSil('deleteZiyaret',id);
+  mKapat('odeme-duz-m');
+  kListele();
+  dm('✓ Ödeme silindi','ok');
 }
 
 function bhKopyala(){
