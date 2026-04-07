@@ -428,7 +428,10 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     </div>
     <div class="fg" style="margin-bottom:0"><label>Not</label><input type="text" id="snot" placeholder="Özel durum..."></div>
   </div>
-  <button class="btn btn-yes" onclick="zvKaydet()" id="zv-kaydet-btn">📍 Ziyareti Kaydet & Gönder</button>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-yes" onclick="zvKaydet()" id="zv-kaydet-btn" style="flex:1;margin-bottom:0">📍 Ziyareti Kaydet & Gönder</button>
+    <button id="zv-iptal-btn" onclick="zDuzIptal()" style="display:none;padding:13px 16px;background:#f0f2f5;color:var(--gri);border:none;border-radius:10px;font-size:20px;cursor:pointer;font-weight:700;line-height:1">✕</button>
+  </div>
   <div style="height:8px"></div>
   <!-- Kayıt sonrası işlemler -->
   <div id="saha-islemler" style="display:none;margin-top:8px">
@@ -1196,8 +1199,19 @@ async function zvKaydet(){
     const kaydetBtn=document.querySelector('#p-saha .btn-yes');
     if(kaydetBtn){kaydetBtn.textContent='📍 Ziyareti Kaydet & Gönder';kaydetBtn.style.background='var(--yes)';}
     dm('✓ Güncellendi — '+z.musteriAdi,'ok');
-    // Güncelleme sonrası kayıtlar sayfasına dön
-    setTimeout(()=>nav('kayitlar',document.querySelectorAll('.nb')[3]),300);
+    // İptal butonunu gizle
+    const iptalBtnG=el('zv-iptal-btn');if(iptalBtnG)iptalBtnG.style.display='none';
+    const kaydetBtnG=el('zv-kaydet-btn');
+    if(kaydetBtnG){kaydetBtnG.textContent='📍 Ziyareti Kaydet & Gönder';kaydetBtnG.style.background='';}
+    // Teslim fişi ve makbuz için saha-islemler'i göster
+    sMstSon=Object.assign({},m||sMst);
+    sonKaydedilenZ=Object.assign({},z);
+    const si=el('saha-islemler');
+    if(si){
+      si.style.display='block';
+      const oib=el('odeme-isletme-bilgi');
+      if(oib&&sMstSon)oib.textContent='🏪 '+sMstSon.isim+(sMstSon.il?' · '+sMstSon.il:'');
+    }
     return;
   } else {
     // Yeni kayıt modu
@@ -1374,12 +1388,13 @@ function zDuz(id){
   el('snot').value=z.notlar||'';
   // Düzeltme modunda kayıt sonrası alanı gizle (yeni kayıt değil)
   el('saha-islemler').style.display='none';
-  const kaydetBtn=document.querySelector('#p-saha .btn-yes');
-  if(kaydetBtn){kaydetBtn.textContent='✏️ Ziyareti Güncelle';kaydetBtn.style.background='var(--tur)';}
+  const kaydetBtn=el('zv-kaydet-btn');
+  if(kaydetBtn){kaydetBtn.textContent='✏️ Güncelle';kaydetBtn.style.background='var(--tur)';}
+  const iptalBtn=el('zv-iptal-btn');if(iptalBtn)iptalBtn.style.display='block';
   // Saha'ya geç ve scroll to top
   nav('saha',document.querySelectorAll('.nb')[2]);
   setTimeout(()=>window.scrollTo({top:0,behavior:'smooth'}),100);
-  dm("Düzenleme modu — Güncelle butonuna basın","info");
+  dm("Düzenleme modu — Güncelle veya ✕ ile iptal","info");
 }
 
 //=== MÜŞTERİ DÜZENLE/SİL ===
@@ -2876,6 +2891,32 @@ function oduzSil(){
   dm('✓ Ödeme silindi','ok');
 }
 
+
+function zDuzIptal(){
+  // Düzeltme modunu iptal et - her şeyi sıfırla
+  duzZiyaretId=null;
+  sMst=null;
+  // İşletme seçimini temizle
+  el('sa').value='';
+  const sar=el('sar');if(sar)sar.style.display='none';
+  const ss=el('ss');if(ss)ss.style.display='none';
+  // Formu sıfırla
+  const skg=el('skg');if(skg)skg.value='';
+  const stu=el('stu');if(stu)stu.value='';
+  const snot=el('snot');if(snot)snot.value='';
+  // Kaydet butonunu normale döndür
+  const kaydetBtn=el('zv-kaydet-btn');
+  if(kaydetBtn){kaydetBtn.textContent='📍 Ziyareti Kaydet & Gönder';kaydetBtn.style.background='';}
+  const iptalBtn=el('zv-iptal-btn');if(iptalBtn)iptalBtn.style.display='none';
+  // islem sıfırla
+  const ial=el('ial');if(ial)islemSec('alindi',ial);
+  // Saha-islemler gizle
+  const si=el('saha-islemler');if(si)si.style.display='none';
+  // Kayıtlara geri dön
+  nav('kayitlar',document.querySelectorAll('.nb')[3]);
+  dm('Düzenleme iptal edildi','info');
+}
+
 function bhKopyala(){
   const metin=el('bh-icerik').textContent;
   navigator.clipboard.writeText(metin).then(()=>dm('✓ Kopyalandı','ok')).catch(()=>{
@@ -3383,6 +3424,12 @@ function ilSil(i){
 function nav(id,btn){
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));if(btn)btn.classList.add('on');
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));el('p-'+id).classList.add('on');
+  // Saha'dan başka sayfaya geçince düzeltme modunu otomatik iptal et
+  if(id!=='saha'&&duzZiyaretId){
+    duzZiyaretId=null;
+    const kb=el('zv-kaydet-btn');if(kb){kb.textContent='📍 Ziyareti Kaydet & Gönder';kb.style.background='';}
+    const ib=el('zv-iptal-btn');if(ib)ib.style.display='none';
+  }
   const b={'rapor':'☀ Sabah Raporu','ziyaret':'🗺 Ziyaret Takvimi','saha':'📍 Saha Kaydı','kayitlar':'📋 Kayıtlar','musteriler':'🏪 Cari Kartlar','teklif':'💼 Teklif Takip','makbuz':'🧾 Makbuz'};
   el('hb').textContent=b[id]||'Ekosa CRM';
   if(id==='ziyaret')zvRender();if(id==='teklif')tListele();if(id==='kayitlar')kListele();if(id==='musteriler')mlRender();if(id==='makbuz')setTimeout(mkbListeYukle,300);if(id==='rapor'){alimOzetRender();perPerfRender();setTimeout(haftalikGrafikCiz,200);takipBadgeGuncelle();yeniMusteriRender();takipGeldiRender();}
