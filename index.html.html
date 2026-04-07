@@ -659,10 +659,10 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     <!-- Özet kartlar -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px" id="cari-ozet"></div>
     <!-- Filtre -->
-    <div style="display:flex;gap:6px;margin-bottom:10px">
-      <button class="fb on" onclick="cariFiltreSec('tumu',this)" style="flex:1;text-align:center">Tümü</button>
-      <button class="fb" onclick="cariFiltreSec('alim',this)" style="flex:1;text-align:center">Alımlar</button>
-      <button class="fb" onclick="cariFiltreSec('odeme',this)" style="flex:1;text-align:center">Ödemeler</button>
+    <div style="display:flex;gap:6px;margin-bottom:10px" id="cari-filtre-btns">
+      <button class="fb on" id="cf-tumu" onclick="cariFiltreSec('tumu',this)" style="flex:1;text-align:center">Tümü</button>
+      <button class="fb" id="cf-alim" onclick="cariFiltreSec('alim',this)" style="flex:1;text-align:center">Alımlar</button>
+      <button class="fb" id="cf-odeme" onclick="cariFiltreSec('odeme',this)" style="flex:1;text-align:center">Ödemeler</button>
     </div>
     <!-- Hareket listesi -->
     <div id="cari-liste"></div>
@@ -3002,28 +3002,30 @@ function cariBakiye(musteriId){
   return {borcToplam, odemeToplam, bakiye:borcToplam-odemeToplam, baslangic};
 }
 
+let cariAktifId=null;
+
 function cariAc(musteriId){
+  if(!musteriId){dm('İşletme seçin','err');return;}
   const m=mst.find(x=>String(x.id)===String(musteriId));
   if(!m){dm('İşletme bulunamadı','err');return;}
-  el('cari-baslik').textContent='💰 '+m.isim;
+  cariAktifId=String(musteriId);
   cariFiltre='tumu';
-  // Filtre butonları sıfırla
-  document.querySelectorAll('#cari-m .fb').forEach(b=>b.classList.remove('on'));
-  const ilkBtn=document.querySelector('#cari-m .fb');
-  if(ilkBtn)ilkBtn.classList.add('on');
+  ['cf-tumu','cf-alim','cf-odeme'].forEach(id=>{const b=el(id);if(b)b.classList.remove('on');});
+  const cfTumu=el('cf-tumu');if(cfTumu)cfTumu.classList.add('on');
+  const baslik=el('cari-baslik');
+  if(baslik)baslik.textContent=m.isim+' — Cari Hesap';
   cariRenderIcin(musteriId);
   mAc('cari-m');
 }
 
-function cariFiltreSec(filtre, btn){
+function cariFiltreSec(filtre,btn){
   cariFiltre=filtre;
-  document.querySelectorAll('#cari-m .fb').forEach(b=>b.classList.remove('on'));
+  ['cf-tumu','cf-alim','cf-odeme'].forEach(id=>{const b=el(id);if(b)b.classList.remove('on');});
   if(btn)btn.classList.add('on');
-  // Mevcut açık işletmenin ID'sini bul
-  const baslik=el('cari-baslik').textContent.replace('💰 ','');
-  const m=mst.find(x=>x.isim===baslik);
-  if(m)cariRenderIcin(m.id);
+  if(cariAktifId)cariRenderIcin(cariAktifId);
 }
+
+
 
 function cariRenderIcin(musteriId){
   const {alimlar, odemeler}=cariHareketleri(musteriId);
@@ -3106,23 +3108,31 @@ function cariRenderIcin(musteriId){
     const netBirim=bf>0?(kdvVar?bf/1.20:bf):0;
 
     const bakiyeRenk=h.kumBakiye>0?'var(--kir)':h.kumBakiye<0?'#6B3FA0':'var(--yes-d)';
+    if(h._baslangic)return`<div style="border-bottom:1px solid #f0f0f0;padding:8px 0;background:#f8f9fa;border-radius:6px;margin-bottom:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><span style="font-size:11px;font-weight:700;background:var(--lac-a);color:var(--lac);padding:2px 7px;border-radius:5px">BAŞLANGIÇ</span>
+        <span style="font-size:11px;color:var(--gri);margin-left:6px">Geçmiş bakiye</span></div>
+        <div style="font-size:15px;font-weight:700;color:${alim?'var(--kir)':'#6B3FA0'}">${alim?'+':'-'}${h.hesapTutar.toFixed(2)}₺</div>
+      </div>
+    </div>`;
     return`<div style="border-bottom:1px solid #f0f0f0;padding:10px 0">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
             <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;${alim?'background:var(--kir-a);color:var(--kir)':'background:var(--yes-a);color:var(--yes-d)'}">${alim?'ALIM':'ÖDEME'}</span>
             <span style="font-size:11px;color:var(--gri)">${tarihStr}${stt?' '+stt:''}</span>
           </div>
-          ${alim?`<div style="font-size:12px;color:var(--gri)">${h.kg} kg · ${h.odemeTuru}${netBirim>0?' · '+netBirim.toFixed(2)+'₺/kg (net)':''}</div>`:''}
-          ${!alim&&h.notlar?`<div style="font-size:11px;color:var(--gri);font-style:italic">${h.notlar}</div>`:''}
-          ${!alim?`<div style="font-size:12px;color:var(--gri)">${h.odemeTuru}</div>`:''}
+          ${alim?`<div style="font-size:12px;color:var(--gri)">${h.kg} kg · ${h.odemeTuru}${netBirim>0?' · '+netBirim.toFixed(2)+'₺/kg (KDV hariç)':''}</div>`:''}
+          ${!alim?`<div style="font-size:12px;color:var(--gri)">${h.odemeTuru}${h.notlar?' · '+h.notlar:''}</div>`:''}
           ${h.personel?`<div style="font-size:11px;color:var(--gri)">👤 ${h.personel}</div>`:''}
         </div>
         <div style="text-align:right;flex-shrink:0;margin-left:10px">
-          <div style="font-size:15px;font-weight:700;${alim?'color:var(--kir)':'color:var(--yes-d)'}">
+          <div style="font-size:16px;font-weight:700;${alim?'color:var(--kir)':'color:var(--yes-d)'}">
             ${alim?'+':'-'}${h.hesapTutar.toFixed(2)}₺
           </div>
-          <div style="font-size:10px;color:${bakiyeRenk};font-weight:600">Kümülatif: ${h.kumBakiye.toFixed(2)}₺</div>
+          <div style="font-size:10px;color:${bakiyeRenk};font-weight:600">Bakiye: ${h.kumBakiye.toFixed(2)}₺</div>
+          ${!alim?`<button onclick="cariOdemeDuz('${h.id}',${musteriId})" style="margin-top:4px;background:var(--lac-a);color:var(--lac);border:none;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">✏️ Düzenle</button>`:''}
+          ${alim?`<button onclick="cariAlimDuz('${h.id}',${musteriId})" style="margin-top:4px;background:var(--lac-a);color:var(--lac);border:none;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">✏️ Düzenle</button>`:''}
         </div>
       </div>
     </div>`;
@@ -3190,6 +3200,55 @@ function genelCariRaporu(){
   tmpDiv.innerHTML=h;
   mAc('bh-m');
 }
+
+
+//=== CARİ HAREKET DÜZENLEME ===
+function cariOdemeDuz(zId, musteriId){
+  // odemeDuz fonksiyonunu kullan, sonra cari'yi yenile
+  const origMKapat=window._origMKapat||mKapat;
+  odemeDuz(zId);
+  // odeme-duz modalı kapanınca cariyi güncelle - override
+  const origOduzKaydet=oduzKaydet;
+  window._cariOduzKaydet=function(){
+    origOduzKaydet();
+    // Cariyi yenile
+    setTimeout(()=>{
+      if(cariAktifId)cariRenderIcin(cariAktifId);
+      mlRender(); // Müşteri listesinde bakiye güncelle
+    },600);
+    oduzKaydet=origOduzKaydet;
+  };
+  oduzKaydet=window._cariOduzKaydet;
+}
+
+function cariAlimDuz(zId, musteriId){
+  // Alım kaydını saha üzerinden düzenle
+  mKapat('cari-m');
+  setTimeout(()=>{
+    zDuz(zId);
+    // Güncelleme sonrası cariyi yenile
+    const origZvKaydet=zvKaydet;
+    window._cariZvKaydet=async function(){
+      await origZvKaydet.call(this,...arguments);
+      setTimeout(()=>{
+        if(musteriId){cariAktifId=String(musteriId);cariRenderIcin(musteriId);}
+        mlRender();
+      },1200);
+      zvKaydet=origZvKaydet;
+    };
+    zvKaydet=window._cariZvKaydet;
+  },300);
+}
+
+// cariAc'tan sonra modal kapatılınca mlRender çağır (bakiye güncel kalsın)
+const _origMKapat=mKapat;
+mKapat=function(id){
+  _origMKapat(id);
+  if(id==='cari-m'||id==='odeme-duz-m'){
+    setTimeout(mlRender,100);
+    setTimeout(()=>{if(document.getElementById('p-rapor')?.classList.contains('on')){alimOzetRender();}},200);
+  }
+};
 
 function bhKopyala(){
   const metin=el('bh-icerik').textContent;
