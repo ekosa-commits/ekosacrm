@@ -1077,9 +1077,13 @@ function mstSec(m){
   el('sn').textContent=m.isim;el('salt').textContent=[m.il,m.bolge,m.adres].filter(Boolean).join(' · ');
   const f=[m.nakitFiyat?'Nakit:'+m.nakitFiyat+'₺':'',m.yakitFiyat?'Yakıt:'+m.yakitFiyat+'₺':'',m.faturaliFiyat?'Faturalı:'+m.faturaliFiyat+'₺':''].filter(Boolean).join(' | ');
   el('sf').textContent=f||'Fiyat girilmemiş';
-  if(m.nakitFiyat)odSec(document.querySelector('[data-v="Nakit"]'));
-  else if(m.yakitFiyat)odSec(document.querySelector('[data-v="Yakıt Kartı"]'));
-  else if(m.faturaliFiyat)odSec(document.querySelector('[data-v="Faturalı"]'));
+  // Panel görünürse ödeme butonunu seç, değilse sadece sOdeme değişkenini güncelle
+  const _obNakit=document.querySelector('[data-v="Nakit"]');
+  const _obYakit=document.querySelector('[data-v="Yakıt Kartı"]');
+  const _obFatura=document.querySelector('[data-v="Faturalı"]');
+  if(m.nakitFiyat){sOdeme='Nakit';if(_obNakit)odSec(_obNakit);}
+  else if(m.yakitFiyat){sOdeme='Yakıt Kartı';if(_obYakit)odSec(_obYakit);}
+  else if(m.faturaliFiyat){sOdeme='Faturalı';if(_obFatura)odSec(_obFatura);}
   setTimeout(otomatikTutar,50);
   // Yakıt kartı göster
   const ykDiv=el('s-yakit-kart');
@@ -1121,28 +1125,13 @@ function islemSec(v,btn){
 }
 
 function odSec(btn){
-  document.querySelectorAll('.ob').forEach(b=>b.classList.remove('on'));btn.classList.add('on');sOdeme=btn.dataset.v;
-  el('tfg').style.display=sOdeme==='Faturalı'?'none':'block';
-  // Yakıt kartı seçilince kart no bölümü göster
+  if(!btn)return; // null guard — panel görünmezken querySelector null döner
+  document.querySelectorAll('.ob').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');sOdeme=btn.dataset.v;
+  const tfg=el('tfg');if(tfg)tfg.style.display=sOdeme==='Faturalı'?'none':'block';
   const ykDiv=el('saha-yakit-kart-alan');
   if(ykDiv)ykDiv.style.display=sOdeme==='Yakıt Kartı'?'block':'none';
-  // Faturalı seçilince otomatik "Ödeme Bekliyor" yap
-  if(sOdeme==='Faturalı'){
-    odemeDurumSec('bekliyor',el('op-bekliyor'));
-  } else if(sOdeme==='Nakit'){
-    odemeDurumSec('yapildi',el('op-yapildi'));
-  }
-  // Yakıt Kartı'nda mevcut seçimi koru (personel seçsin)
   otomatikTutar();
-}
-
-let sOdemeDurum='yapildi';
-function odemeDurumSec(v,btn){
-  sOdemeDurum=v;
-  document.querySelectorAll('#op-yapildi,#op-bekliyor').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  if(v==='bekliyor'){btn.style.borderColor='#E67E22';btn.style.background='#FEF0E7';btn.style.color='#E67E22';}
-  else{btn.style.borderColor='';btn.style.background='';btn.style.color='';}
 }
 
 function otomatikTutar(){
@@ -1181,10 +1170,12 @@ async function zvKaydet(){
     shSil('deleteZiyaret',duzZiyaretId);
     setTimeout(()=>shG('addZiyaret',z),500);
     duzZiyaretId=null;
-    // Kaydet butonunu normale döndür
     const kaydetBtn=document.querySelector('#p-saha .btn-yes');
     if(kaydetBtn){kaydetBtn.textContent='📍 Ziyareti Kaydet & Gönder';kaydetBtn.style.background='var(--yes)';}
-    dm('✓ Ziyaret güncellendi — '+z.musteriAdi,'ok');
+    dm('✓ Güncellendi — '+z.musteriAdi,'ok');
+    // Güncelleme sonrası kayıtlar sayfasına dön
+    setTimeout(()=>nav('kayitlar',document.querySelectorAll('.nb')[3]),300);
+    return;
   } else {
     // Yeni kayıt modu
     zvr.unshift(z);
