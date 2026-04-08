@@ -1256,41 +1256,24 @@ async function zvKaydet(){
     birimFiyat:sIslem==='alindi'?(sOdeme==='Nakit'?parseFloat(sMst.nakitFiyat)||0:sOdeme==='Yakıt Kartı'?parseFloat(sMst.yakitFiyat)||0:parseFloat(sMst.faturaliFiyat)||0):0,
     doluluk:sIslem==='alinmadi'?sDol:'',notlar:el('snot').value};
   if(duzZiyaretId){
-    // Güncelleme modu - eski kaydı bul ve üzerine yaz
     const duzIdx=zvr.findIndex(x=>String(x.id)===String(duzZiyaretId));
     const eskiZ=zvr.find(x=>String(x.id)===String(duzZiyaretId));
-    z.id=duzZiyaretId; // Aynı ID'yi koru
-    z.tarih=eskiZ?eskiZ.tarih:z.tarih; // Orijinal tarihi koru
+    z.id=duzZiyaretId;
+    z.tarih=eskiZ?eskiZ.tarih:z.tarih;
     z.saat=eskiZ?eskiZ.saat:z.saat;
-    if(duzIdx!==-1){zvr[duzIdx]=z;}
-    else{zvr.unshift(z);}
-    // Sheets güncelle: eski sil, yeni ekle
-    // silzvr listesine ekle - sync'te geri gelmesin
-    const _silZvr=JSON.parse(localStorage.getItem('silzvr')||'[]');
-    if(!_silZvr.includes(String(duzZiyaretId))){_silZvr.push(String(duzZiyaretId));localStorage.setItem('silzvr',JSON.stringify(_silZvr));}
+    if(duzIdx!==-1){zvr[duzIdx]=z;}else{zvr.unshift(z);}
+    // silzvr'e ekle - sync'te eski kayıt geri gelmesin
+    const _sv=JSON.parse(localStorage.getItem('silzvr')||'[]');
+    if(!_sv.includes(String(duzZiyaretId))){_sv.push(String(duzZiyaretId));localStorage.setItem('silzvr',JSON.stringify(_sv));}
     shSil('deleteZiyaret',duzZiyaretId);
     setTimeout(()=>shG('addZiyaret',z),1000);
     duzZiyaretId=null;
-    const kaydetBtn=document.querySelector('#p-saha .btn-yes');
-    if(kaydetBtn){kaydetBtn.textContent='📍 Ziyareti Kaydet & Gönder';kaydetBtn.style.background='var(--yes)';}
     dm('✓ Güncellendi — '+z.musteriAdi,'ok');
-    // İptal butonunu gizle
-    const iptalBtnG=el('zv-iptal-btn');if(iptalBtnG)iptalBtnG.style.display='none';
-    const kaydetBtnG=el('zv-kaydet-btn');
-    if(kaydetBtnG){kaydetBtnG.textContent='📍 Ziyareti Kaydet & Gönder';kaydetBtnG.style.background='';}
-    // Teslim fişi ve makbuz için saha-islemler'i göster
-    sMstSon=Object.assign({},m||sMst);
-    sonKaydedilenZ=Object.assign({},z);
-    const si=el('saha-islemler');
-    if(si){
-      si.style.display='block';
-      // Kayıt özeti
-      const sko=el('saha-kayit-ozet');
-      if(sko&&z.islem==='Alım Yapıldı')sko.textContent=z.kg+' kg · '+z.odemeTuru+(z.tutar?' · '+z.tutar+'₺':'');
-      else if(sko)sko.textContent='Alım yapılmadı · %'+z.doluluk+' dolu';
-      const oib=el('odeme-isletme-bilgi');
-      if(oib&&sMstSon)oib.textContent='🏪 '+sMstSon.isim+(sMstSon.il?' · '+sMstSon.il:'');
-    }
+    // Saha butonlarını sıfırla
+    const _kb=el('zv-kaydet-btn');if(_kb){_kb.textContent='📍 Kaydet & Gönder';_kb.style.background='';}
+    const _ib=el('zv-iptal-btn');if(_ib)_ib.style.display='none';
+    // Kayıtlara dön
+    setTimeout(()=>{kListele();nav('kayitlar',document.querySelectorAll('.nb')[3]);},300);
     return;
   } else {
     // Yeni kayıt modu
@@ -3035,23 +3018,20 @@ function sahaTemizle(){
 
 
 //=== CARİ HESAP SİSTEMİ ===
+let cariAktifId=null;
 let cariFiltre='tumu';
 
-// İşletmeye ait tüm hareketleri getir
 function cariHareketleri(musteriId){
   const mid=String(musteriId);
   const alimlar=zvr.filter(z=>String(z.musteriId)===mid&&z.islem==='Alım Yapıldı');
   const odemeler=zvr.filter(z=>String(z.musteriId)===mid&&z.islem==='Ödeme');
-  return {alimlar, odemeler};
+  return {alimlar,odemeler};
 }
 
-// Cari bakiye hesapla
 function cariBakiye(musteriId){
-  const {alimlar, odemeler}=cariHareketleri(musteriId);
-  // Başlangıç bakiyesi (manuel girilen geçmiş borç)
+  const {alimlar,odemeler}=cariHareketleri(musteriId);
   const m=mst.find(x=>String(x.id)===String(musteriId));
   const baslangic=parseFloat(m?.baslangicBakiye||0)||0;
-  // Borç = başlangıç + toplam alım tutarı
   let borcToplam=baslangic>0?baslangic:0;
   alimlar.forEach(z=>{
     const kg=parseFloat(z.kg)||0;
@@ -3059,13 +3039,109 @@ function cariBakiye(musteriId){
     const tutar=parseFloat(z.tutar)||0;
     borcToplam+=bf>0&&kg>0?(kg*bf):tutar;
   });
-  // Ödeme = başlangıç alacak + yapılan ödemeler
   let odemeToplam=baslangic<0?Math.abs(baslangic):0;
   odemeToplam+=odemeler.reduce((s,z)=>s+(parseFloat(z.tutar)||0),0);
-  return {borcToplam, odemeToplam, bakiye:borcToplam-odemeToplam, baslangic};
+  return {borcToplam,odemeToplam,bakiye:borcToplam-odemeToplam,baslangic};
 }
 
-let cariAktifId=null;
+function cariRenderIcin(musteriId){
+  const c=el('cari-liste');
+  const ozet=el('cari-ozet');
+  if(!c)return;
+  const {alimlar,odemeler}=cariHareketleri(musteriId);
+  const {borcToplam,odemeToplam,bakiye,baslangic}=cariBakiye(musteriId);
+
+  // Özet kartlar
+  if(ozet){
+    const bakiyeRenk=bakiye>0?'var(--kir)':bakiye<0?'#6B3FA0':'var(--yes-d)';
+    const bakiyeBg=bakiye>0?'var(--kir-a)':bakiye<0?'#F3EEFE':'var(--yes-a)';
+    const bakiyeEtiket=bakiye>0?'Ödenmemiş Borç':bakiye<0?'Fazla Ödeme':'Bakiye Sıfır';
+    ozet.innerHTML=`
+      <div style="background:var(--kir-a);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:var(--gri);margin-bottom:2px">Toplam Borç</div>
+        <div style="font-size:20px;font-weight:800;color:var(--kir)">${borcToplam.toFixed(2)}₺</div>
+        <div style="font-size:10px;color:var(--gri)">${alimlar.length} alım</div>
+      </div>
+      <div style="background:var(--yes-a);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:var(--gri);margin-bottom:2px">Toplam Ödeme</div>
+        <div style="font-size:20px;font-weight:800;color:var(--yes-d)">${odemeToplam.toFixed(2)}₺</div>
+        <div style="font-size:10px;color:var(--gri)">${odemeler.length} ödeme</div>
+      </div>
+      <div style="background:${bakiyeBg};border-radius:8px;padding:10px;text-align:center;grid-column:span 2">
+        <div style="font-size:11px;color:var(--gri);margin-bottom:2px">${bakiyeEtiket}</div>
+        <div style="font-size:24px;font-weight:800;color:${bakiyeRenk}">${Math.abs(bakiye).toFixed(2)}₺</div>
+      </div>`;
+  }
+
+  // Hareketleri birleştir
+  let hareketler=[];
+  if(baslangic!==0&&cariFiltre==='tumu'){
+    hareketler.push({id:'baslangic',tarih:'01.01.2000',saat:'',tip:baslangic>0?'alim':'odeme',
+      hesapTutar:Math.abs(baslangic),kg:'',birimFiyat:0,odemeTuru:'—',personel:'Sistem',
+      notlar:'Başlangıç bakiyesi',kumBakiye:0,_tarihSort:'2000-01-01',_baslangic:true});
+  }
+  if(cariFiltre!=='odeme'){
+    alimlar.forEach(z=>{
+      const kg=parseFloat(z.kg)||0;
+      const bf=parseFloat(z.birimFiyat)||0;
+      const tutar=parseFloat(z.tutar)||0;
+      hareketler.push({...z,tip:'alim',hesapTutar:bf>0&&kg>0?(kg*bf):tutar});
+    });
+  }
+  if(cariFiltre!=='alim'){
+    odemeler.forEach(z=>{
+      hareketler.push({...z,tip:'odeme',hesapTutar:parseFloat(z.tutar)||0});
+    });
+  }
+
+  // Tarihe göre sırala (en yeni üste)
+  hareketler.sort((a,b)=>{
+    const parse=t=>t.includes('T')?new Date(t):new Date(t.split('.').reverse().join('-'));
+    return parse(b.tarih)-parse(a.tarih);
+  });
+
+  if(!hareketler.length){c.innerHTML='<div class="bos">Bu filtre için hareket yok</div>';return;}
+
+  // Kümülatif bakiye (en eskiden en yeniye)
+  let kum=0;
+  [...hareketler].reverse().forEach(h=>{
+    if(h.tip==='alim')kum+=h.hesapTutar;
+    else kum-=h.hesapTutar;
+    h.kumBakiye=kum;
+  });
+
+  c.innerHTML=hareketler.map(h=>{
+    if(h._baslangic)return`<div style="background:#f0f2f5;border-radius:7px;padding:8px 10px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+      <div><span style="font-size:11px;font-weight:700;background:var(--lac-a);color:var(--lac);padding:2px 7px;border-radius:4px">BAŞLANGIÇ</span>
+      <span style="font-size:11px;color:var(--gri);margin-left:6px">Geçmiş bakiye</span></div>
+      <div style="font-size:15px;font-weight:700;color:${h.tip==='alim'?'var(--kir)':'#6B3FA0'}">${h.tip==='alim'?'+':'-'}${h.hesapTutar.toFixed(2)}₺</div>
+    </div>`;
+    const tarih=h.tarih.includes('T')?ft2(h.tarih):h.tarih;
+    const stt=saatStr2(h.saat||'');
+    const alim=h.tip==='alim';
+    const bf=parseFloat(h.birimFiyat)||0;
+    const kdvVar=h.odemeTuru==='Faturalı'||h.odemeTuru==='Yakıt Kartı';
+    const netBirim=bf>0?(kdvVar?bf/1.20:bf):0;
+    const kumRenk=h.kumBakiye>0?'var(--kir)':h.kumBakiye<0?'#6B3FA0':'var(--yes-d)';
+    return`<div style="border-bottom:1px solid #f0f0f0;padding:10px 0">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;flex-wrap:wrap">
+            <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;${alim?'background:var(--kir-a);color:var(--kir)':'background:var(--yes-a);color:var(--yes-d)'}">${alim?'ALIM':'ÖDEME'}</span>
+            <span style="font-size:11px;color:var(--gri)">${tarih}${stt?' '+stt:''}</span>
+          </div>
+          ${alim?`<div style="font-size:12px;color:var(--gri)">${h.kg} kg · ${h.odemeTuru}${netBirim>0?' · '+netBirim.toFixed(2)+'₺/kg':''}${h.personel?' · 👤'+h.personel:''}</div>`:''}
+          ${!alim?`<div style="font-size:12px;color:var(--gri)">${h.odemeTuru}${h.notlar?' · '+h.notlar:''}${h.personel?' · 👤'+h.personel:''}</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:10px">
+          <div style="font-size:16px;font-weight:700;${alim?'color:var(--kir)':'color:var(--yes-d)'}">${alim?'+':'-'}${h.hesapTutar.toFixed(2)}₺</div>
+          <div style="font-size:10px;color:${kumRenk};font-weight:600">${h.kumBakiye.toFixed(2)}₺</div>
+          ${!h._baslangic?`<button onclick="cariHareketDuz('${h.id}','${h.tip}',${musteriId})" style="margin-top:3px;background:var(--lac-a);color:var(--lac);border:none;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">✏️</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
 
 function cariAc(musteriId){
   if(!musteriId){dm('İşletme seçin','err');return;}
@@ -3073,10 +3149,10 @@ function cariAc(musteriId){
   if(!m){dm('İşletme bulunamadı','err');return;}
   cariAktifId=String(musteriId);
   cariFiltre='tumu';
-  ['cf-tumu','cf-alim','cf-odeme'].forEach(id=>{const b=el(id);if(b)b.classList.remove('on');});
-  const cfTumu=el('cf-tumu');if(cfTumu)cfTumu.classList.add('on');
-  const baslik=el('cari-baslik');
-  if(baslik)baslik.textContent=m.isim+' — Cari Hesap';
+  const b=el('cari-baslik');
+  if(b)b.textContent=m.isim+' — Cari Hesap';
+  ['cf-tumu','cf-alim','cf-odeme'].forEach(id=>{const btn=el(id);if(btn)btn.classList.remove('on');});
+  const cfT=el('cf-tumu');if(cfT)cfT.classList.add('on');
   cariRenderIcin(musteriId);
   mAc('cari-m');
 }
@@ -3088,276 +3164,54 @@ function cariFiltreSec(filtre,btn){
   if(cariAktifId)cariRenderIcin(cariAktifId);
 }
 
-
-
-function cariRenderIcin(musteriId){
-  const {alimlar, odemeler}=cariHareketleri(musteriId);
-  const {borcToplam, odemeToplam, bakiye}=cariBakiye(musteriId);
-
-  // Özet kartlar
-  const ozetRenk=bakiye>0?'var(--kir-a)':bakiye<0?'#F3EEFE':'var(--yes-a)';
-  const ozetYazi=bakiye>0?'Kalan Borç':bakiye<0?'Fazla Ödendi':'Bakiye Sıfır';
-  const ozetRenkYazi=bakiye>0?'var(--kir)':bakiye<0?'#6B3FA0':'var(--yes-d)';
-  el('cari-ozet').innerHTML=`
-    <div style="background:var(--kir-a);border-radius:8px;padding:10px;text-align:center">
-      <div style="font-size:11px;color:var(--gri);margin-bottom:2px">Toplam Borç</div>
-      <div style="font-size:20px;font-weight:800;color:var(--kir)">${borcToplam.toFixed(2)}₺</div>
-      <div style="font-size:10px;color:var(--gri)">${alimlar.length} alım</div>
-    </div>
-    <div style="background:var(--yes-a);border-radius:8px;padding:10px;text-align:center">
-      <div style="font-size:11px;color:var(--gri);margin-bottom:2px">Toplam Ödeme</div>
-      <div style="font-size:20px;font-weight:800;color:var(--yes-d)">${odemeToplam.toFixed(2)}₺</div>
-      <div style="font-size:10px;color:var(--gri)">${odemeler.length} ödeme</div>
-    </div>
-    <div style="background:${ozetRenk};border-radius:8px;padding:10px;text-align:center;grid-column:span 2">
-      <div style="font-size:11px;color:var(--gri);margin-bottom:2px">${ozetYazi}</div>
-      <div style="font-size:24px;font-weight:800;color:${ozetRenkYazi}">${Math.abs(bakiye).toFixed(2)}₺</div>
-    </div>`;
-
-  // Başlangıç bakiyesi hareketi
-  let hareketler=[];
-  if(baslangic!==0&&cariFiltre==='tumu'){
-    hareketler.push({
-      id:'baslangic',tarih:'01.01.2000',saat:'',
-      tip:baslangic>0?'alim':'odeme',
-      hesapTutar:Math.abs(baslangic),
-      musteriAdi:'',kg:'',birimFiyat:0,odemeTuru:'—',
-      personel:'Sistem',notlar:'Başlangıç bakiyesi',
-      kumBakiye:0,_tarihSort:'01.01.2000',_baslangic:true
-    });
+function cariHareketDuz(zId,tip,musteriId){
+  if(tip==='odeme'){
+    odemeDuz(zId);
+    // Ödeme düzenlenince cariyi güncelle
+    const orig=oduzKaydet;
+    oduzKaydet=function(){orig();setTimeout(()=>{if(cariAktifId)cariRenderIcin(cariAktifId);mlRender();},600);oduzKaydet=orig;};
+  } else {
+    mKapat('cari-m');
+    setTimeout(()=>zDuz(zId),200);
   }
-  if(cariFiltre!=='odeme'){
-    alimlar.forEach(z=>{
-      const kg=parseFloat(z.kg)||0;
-      const bf=parseFloat(z.birimFiyat)||0;
-      const tutar=parseFloat(z.tutar)||0;
-      const hesapTutar=bf>0&&kg>0?(kg*bf):tutar;
-      hareketler.push({...z, tip:'alim', hesapTutar, _tarihSort:z.tarih});
-    });
-  }
-  if(cariFiltre!=='alim'){
-    odemeler.forEach(z=>{
-      hareketler.push({...z, tip:'odeme', hesapTutar:parseFloat(z.tutar)||0, _tarihSort:z.tarih});
-    });
-  }
-
-  // Tarihe göre sırala (en yeni üste)
-  hareketler.sort((a,b)=>{
-    const ta=a.tarih.includes('T')?new Date(a.tarih):new Date(a.tarih.split('.').reverse().join('-'));
-    const tb=b.tarih.includes('T')?new Date(b.tarih):new Date(b.tarih.split('.').reverse().join('-'));
-    return tb-ta;
-  });
-
-  if(!hareketler.length){
-    el('cari-liste').innerHTML='<div class="bos">Bu filtre için hareket yok</div>';
-    return;
-  }
-
-  // Kümülatif bakiye hesapla (en eski → en yeniye)
-  let kumBakiye=0;
-  const sirali=[...hareketler].reverse();
-  sirali.forEach(h=>{
-    if(h.tip==='alim') kumBakiye+=h.hesapTutar;
-    else kumBakiye-=h.hesapTutar;
-    h.kumBakiye=kumBakiye;
-  });
-
-  el('cari-liste').innerHTML=hareketler.map(h=>{
-    const tarihStr=h.tarih.includes('T')?ft2(h.tarih):h.tarih;
-    const stt=saatStr2(h.saat||'');
-    const alim=h.tip==='alim';
-    const kdvVar=h.odemeTuru==='Faturalı'||h.odemeTuru==='Yakıt Kartı';
-    const bf=parseFloat(h.birimFiyat)||0;
-    const netBirim=bf>0?(kdvVar?bf/1.20:bf):0;
-
-    const bakiyeRenk=h.kumBakiye>0?'var(--kir)':h.kumBakiye<0?'#6B3FA0':'var(--yes-d)';
-    if(h._baslangic)return`<div style="border-bottom:1px solid #f0f0f0;padding:8px 0;background:#f8f9fa;border-radius:6px;margin-bottom:4px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><span style="font-size:11px;font-weight:700;background:var(--lac-a);color:var(--lac);padding:2px 7px;border-radius:5px">BAŞLANGIÇ</span>
-        <span style="font-size:11px;color:var(--gri);margin-left:6px">Geçmiş bakiye</span></div>
-        <div style="font-size:15px;font-weight:700;color:${alim?'var(--kir)':'#6B3FA0'}">${alim?'+':'-'}${h.hesapTutar.toFixed(2)}₺</div>
-      </div>
-    </div>`;
-    return`<div style="border-bottom:1px solid #f0f0f0;padding:10px 0">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-            <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;${alim?'background:var(--kir-a);color:var(--kir)':'background:var(--yes-a);color:var(--yes-d)'}">${alim?'ALIM':'ÖDEME'}</span>
-            <span style="font-size:11px;color:var(--gri)">${tarihStr}${stt?' '+stt:''}</span>
-          </div>
-          ${alim?`<div style="font-size:12px;color:var(--gri)">${h.kg} kg · ${h.odemeTuru}${netBirim>0?' · '+netBirim.toFixed(2)+'₺/kg (KDV hariç)':''}</div>`:''}
-          ${!alim?`<div style="font-size:12px;color:var(--gri)">${h.odemeTuru}${h.notlar?' · '+h.notlar:''}</div>`:''}
-          ${h.personel?`<div style="font-size:11px;color:var(--gri)">👤 ${h.personel}</div>`:''}
-        </div>
-        <div style="text-align:right;flex-shrink:0;margin-left:10px">
-          <div style="font-size:16px;font-weight:700;${alim?'color:var(--kir)':'color:var(--yes-d)'}">
-            ${alim?'+':'-'}${h.hesapTutar.toFixed(2)}₺
-          </div>
-          <div style="font-size:10px;color:${bakiyeRenk};font-weight:600">Bakiye: ${h.kumBakiye.toFixed(2)}₺</div>
-          ${!alim?`<button onclick="cariOdemeDuz('${h.id}',${musteriId})" style="margin-top:4px;background:var(--lac-a);color:var(--lac);border:none;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">✏️ Düzenle</button>`:''}
-          ${alim?`<button onclick="cariAlimDuz('${h.id}',${musteriId})" style="margin-top:4px;background:var(--lac-a);color:var(--lac);border:none;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">✏️ Düzenle</button>`:''}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
 }
 
 //=== GENEL CARİ RAPORU ===
 function genelCariRaporu(){
-  // Tüm aktif işletmeleri bakiyeye göre sırala
   const raporlar=mst.filter(m=>m.aktif!==false).map(m=>{
     const {borcToplam,odemeToplam,bakiye}=cariBakiye(m.id);
     return {...m,borcToplam,odemeToplam,bakiye};
-  }).filter(m=>m.borcToplam>0||m.odemeToplam>0) // En az 1 hareket olsun
-    .sort((a,b)=>b.bakiye-a.bakiye); // En yüksek borç üste
+  }).filter(m=>m.borcToplam>0||m.odemeToplam>0).sort((a,b)=>b.bakiye-a.bakiye);
 
   if(!raporlar.length){dm('Henüz cari hareket yok','info');return;}
-
-  // Modal yoksa BH modali gibi bir panel göster
-  // bh-m modalını geçici olarak kullanacağız
-  const topBorcToplam=raporlar.reduce((s,m)=>s+m.borcToplam,0);
-  const topOdemeToplam=raporlar.reduce((s,m)=>s+m.odemeToplam,0);
-  const topBakiye=topBorcToplam-topOdemeToplam;
-
+  const topBorç=raporlar.reduce((s,m)=>s+m.borcToplam,0);
+  const topÖdeme=raporlar.reduce((s,m)=>s+m.odemeToplam,0);
+  const topBakiye=topBorç-topÖdeme;
   let h=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-    <div style="background:var(--kir-a);border-radius:8px;padding:10px;text-align:center">
-      <div style="font-size:11px;color:var(--gri)">Toplam Borç</div>
-      <div style="font-size:18px;font-weight:800;color:var(--kir)">${topBorcToplam.toFixed(0)}₺</div>
-    </div>
-    <div style="background:var(--yes-a);border-radius:8px;padding:10px;text-align:center">
-      <div style="font-size:11px;color:var(--gri)">Toplam Ödeme</div>
-      <div style="font-size:18px;font-weight:800;color:var(--yes-d)">${topOdemeToplam.toFixed(0)}₺</div>
-    </div>
+    <div style="background:var(--kir-a);border-radius:8px;padding:10px;text-align:center"><div style="font-size:11px;color:var(--gri)">Toplam Borç</div><div style="font-size:18px;font-weight:800;color:var(--kir)">${topBorç.toFixed(0)}₺</div></div>
+    <div style="background:var(--yes-a);border-radius:8px;padding:10px;text-align:center"><div style="font-size:11px;color:var(--gri)">Toplam Ödeme</div><div style="font-size:18px;font-weight:800;color:var(--yes-d)">${topÖdeme.toFixed(0)}₺</div></div>
     <div style="background:${topBakiye>0?'var(--kir-a)':'var(--yes-a)'};border-radius:8px;padding:10px;text-align:center;grid-column:span 2">
-      <div style="font-size:11px;color:var(--gri)">Ödenmemiş Kalan</div>
+      <div style="font-size:11px;color:var(--gri)">Kalan Borç</div>
       <div style="font-size:22px;font-weight:800;color:${topBakiye>0?'var(--kir)':'var(--yes-d)'}">${Math.abs(topBakiye).toFixed(0)}₺</div>
-    </div>
-  </div>
-  <div style="font-size:11px;font-weight:700;color:var(--lac);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${raporlar.length} işletme — Bakiyeye Göre</div>`;
-
+    </div></div>`;
   raporlar.forEach(m=>{
     if(m.bakiye===0)return;
     const renk=m.bakiye>0?'var(--kir)':'#6B3FA0';
     const bg=m.bakiye>0?'var(--kir-a)':'#F3EEFE';
-    const etiket=m.bakiye>0?'Borç':'Fazla Ödeme';
     h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 10px;background:${bg};border-radius:8px;margin-bottom:5px;cursor:pointer" onclick="mKapat('bh-m');setTimeout(()=>cariAc(${m.id}),200)">
-      <div>
-        <div style="font-size:13px;font-weight:600">${m.isim}</div>
-        <div style="font-size:11px;color:var(--gri)">${m.il||''}${m.bolge?' · '+m.bolge:''}</div>
-        <div style="font-size:11px;color:var(--gri)">Borç: ${m.borcToplam.toFixed(0)}₺ · Ödeme: ${m.odemeToplam.toFixed(0)}₺</div>
-      </div>
+      <div><div style="font-size:13px;font-weight:600">${m.isim}</div>
+      <div style="font-size:11px;color:var(--gri)">${m.il||''}${m.bolge?' · '+m.bolge:''} · Borç:${m.borcToplam.toFixed(0)}₺ · Ödeme:${m.odemeToplam.toFixed(0)}₺</div></div>
       <div style="text-align:right;flex-shrink:0;margin-left:10px">
         <div style="font-size:16px;font-weight:800;color:${renk}">${Math.abs(m.bakiye).toFixed(0)}₺</div>
-        <div style="font-size:10px;color:${renk};font-weight:600">${etiket}</div>
-      </div>
-    </div>`;
+      </div></div>`;
   });
-
-  // bh-m modalını kullan
   el('bh-tarih').textContent='Genel Cari Raporu — '+bug();
-  el('bh-icerik').style.display='none';
   const bhIcerik=el('bh-icerik');
-  // Modal içeriğini geçici div olarak göster
+  if(bhIcerik){bhIcerik.style.display='none';}
   let tmpDiv=document.getElementById('cari-genel-div');
-  if(!tmpDiv){tmpDiv=document.createElement('div');tmpDiv.id='cari-genel-div';bhIcerik.parentNode.insertBefore(tmpDiv,bhIcerik);}
+  if(!tmpDiv){tmpDiv=document.createElement('div');tmpDiv.id='cari-genel-div';bhIcerik&&bhIcerik.parentNode.insertBefore(tmpDiv,bhIcerik);}
   tmpDiv.innerHTML=h;
   mAc('bh-m');
-}
-
-
-//=== CARİ HAREKET DÜZENLEME ===
-function cariOdemeDuz(zId, musteriId){
-  // odemeDuz fonksiyonunu kullan, sonra cari'yi yenile
-  const origMKapat=window._origMKapat||mKapat;
-  odemeDuz(zId);
-  // odeme-duz modalı kapanınca cariyi güncelle - override
-  const origOduzKaydet=oduzKaydet;
-  window._cariOduzKaydet=function(){
-    origOduzKaydet();
-    // Cariyi yenile
-    setTimeout(()=>{
-      if(cariAktifId)cariRenderIcin(cariAktifId);
-      mlRender(); // Müşteri listesinde bakiye güncelle
-    },600);
-    oduzKaydet=origOduzKaydet;
-  };
-  oduzKaydet=window._cariOduzKaydet;
-}
-
-function cariAlimDuz(zId, musteriId){
-  // Alım kaydını saha üzerinden düzenle
-  mKapat('cari-m');
-  setTimeout(()=>{
-    zDuz(zId);
-    // Güncelleme sonrası cariyi yenile
-    const origZvKaydet=zvKaydet;
-    window._cariZvKaydet=async function(){
-      await origZvKaydet.call(this,...arguments);
-      setTimeout(()=>{
-        if(musteriId){cariAktifId=String(musteriId);cariRenderIcin(musteriId);}
-        mlRender();
-      },1200);
-      zvKaydet=origZvKaydet;
-    };
-    zvKaydet=window._cariZvKaydet;
-  },300);
-}
-
-// cariAc'tan sonra modal kapatılınca mlRender çağır (bakiye güncel kalsın)
-
-
-
-//=== CARİ EKSTRE WHATSAPP PAYLAŞIMI ===
-function cariWhatsApp(){
-  if(!cariAktifId){dm('Önce bir işletme seçin','err');return;}
-  const m=mst.find(x=>String(x.id)===String(cariAktifId));
-  if(!m){dm('İşletme bulunamadı','err');return;}
-  const {alimlar,odemeler}=cariHareketleri(cariAktifId);
-  const {borcToplam,odemeToplam,bakiye}=cariBakiye(cariAktifId);
-
-  // Ekstre metni oluştur
-  let metin='';
-  metin+='🧾 *EKOSAKsa CARİ HESAP EKSTRESİ*\n';
-  metin+='━━━━━━━━━━━━━━━━━━━━\n';
-  metin+='🏪 *'+m.isim+'*\n';
-  if(m.il)metin+='📍 '+m.il+(m.bolge?' / '+m.bolge:'')+'\n';
-  metin+='📅 Tarih: '+bug()+'\n';
-  metin+='━━━━━━━━━━━━━━━━━━━━\n\n';
-
-  if(alimlar.length){
-    metin+='📦 *ALIMLAR ('+alimlar.length+')*\n';
-    alimlar.slice(0,10).forEach((z,i)=>{
-      const kg=parseFloat(z.kg)||0;
-      const bf=parseFloat(z.birimFiyat)||0;
-      const tutar=bf>0&&kg>0?(kg*bf):parseFloat(z.tutar)||0;
-      const tarih=z.tarih.includes('T')?ft2(z.tarih):z.tarih;
-      metin+='  '+(i+1)+'. '+tarih+' — '+kg+' kg × '+(bf||'—')+'₺ = *'+tutar.toFixed(2)+'₺* ('+z.odemeTuru+')\n';
-    });
-    if(alimlar.length>10)metin+='  ... ve '+(alimlar.length-10)+' alım daha\n';
-    metin+='\n';
-  }
-
-  if(odemeler.length){
-    metin+='💳 *ÖDEMELER ('+odemeler.length+')*\n';
-    odemeler.slice(0,10).forEach((z,i)=>{
-      const tarih=z.tarih.includes('T')?ft2(z.tarih):z.tarih;
-      metin+='  '+(i+1)+'. '+tarih+' — *'+parseFloat(z.tutar||0).toFixed(2)+'₺* ('+z.odemeTuru+')\n';
-    });
-    if(odemeler.length>10)metin+='  ... ve '+(odemeler.length-10)+' ödeme daha\n';
-    metin+='\n';
-  }
-
-  metin+='━━━━━━━━━━━━━━━━━━━━\n';
-  metin+='💰 Toplam Borç: *'+borcToplam.toFixed(2)+'₺*\n';
-  metin+='✅ Toplam Ödeme: *'+odemeToplam.toFixed(2)+'₺*\n';
-  if(bakiye>0) metin+='⚠️ Kalan Borç: *'+bakiye.toFixed(2)+'₺*\n';
-  else if(bakiye<0) metin+='💚 Fazla Ödeme: *'+Math.abs(bakiye).toFixed(2)+'₺*\n';
-  else metin+='✅ *Bakiye Sıfır*\n';
-  metin+='━━━━━━━━━━━━━━━━━━━━\n';
-  metin+='_Ekosa Çevre Çözümleri_';
-
-  const url='https://wa.me/?text='+encodeURIComponent(metin);
-  window.open(url,'_blank');
 }
 
 function bhKopyala(){
