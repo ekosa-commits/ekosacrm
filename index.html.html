@@ -358,7 +358,7 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
 
 <!-- SAHA -->
 <div class="panel" id="p-saha">
-  <!-- Saha ödeme hidden inputs -->
+  <!-- Saha hidden inputs -->
   <input type="hidden" id="odeme-musteriId">
   <input type="hidden" id="odeme-musteriAdi">
   <input type="hidden" id="odeme-musteriIl">
@@ -367,58 +367,60 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
   <input type="hidden" id="odeme-isletme-secili">
   <input type="hidden" id="odeme-isletme-ad">
   <input type="hidden" id="odeme-isletme-il">
-  <div class="card">
-    <div class="ct">İşletme Seç</div>
-    <div class="aw"><span class="ai">⌕</span><input type="text" id="sa" placeholder="Kayıtlı işletme ara..." oninput="sAra(this.value)" autocomplete="off"></div>
-    <div id="sar" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;display:none"></div>
-    <div class="sk" id="ss">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2px">
-        <div class="sn" id="sn" style="flex:1">—</div>
+
+  <!-- ADIM 1: İşletme Seç -->
+  <div class="card" id="saha-adim1">
+    <div class="ct">📍 Adım 1 — İşletme Seç</div>
+    <div class="aw"><span class="ai">⌕</span><input type="text" id="sa" placeholder="İşletme adı yaz..." oninput="sAra(this.value)" autocomplete="off"></div>
+    <div id="sar" style="max-height:200px;overflow-y:auto;border:1px solid #f0f0f0;border-radius:8px;display:none"></div>
+    <!-- Seçili işletme -->
+    <div class="sk" id="ss" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1">
+          <div class="sn" id="sn" style="font-size:15px;font-weight:700;color:var(--lac)">—</div>
+          <div class="sa" id="salt" style="font-size:12px;color:var(--gri);margin-top:2px">—</div>
+          <div id="sf" style="font-size:12px;font-weight:600;color:var(--yes-d);margin-top:3px"></div>
+          <div id="saha-cari-bilgi" style="display:none;font-size:12px;margin-top:5px"></div>
+          <button onclick="if(sMst)cariAc(sMst.id)" style="display:none;background:none;border:none;color:var(--lac);font-size:11px;font-weight:600;cursor:pointer;padding:3px 0;font-family:inherit;text-decoration:underline" id="saha-cari-btn">📊 Cari hesabı gör →</button>
+        </div>
         <button onclick="if(sMst)sahaKartAc(sMst.id)" style="background:var(--lac-a);color:var(--lac);border:none;padding:4px 9px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;flex-shrink:0;font-family:inherit;margin-left:6px">✎</button>
       </div>
-      <div class="sa" id="salt">—</div>
-      <div class="sf" id="sf"></div>
-      <div id="saha-cari-bilgi" style="display:none;font-size:12px;margin-top:6px;padding:6px 8px;border-radius:7px;border-top:1px solid rgba(30,45,107,.1)"></div>
-      <button onclick="if(sMst)cariAc(sMst.id)" style="display:none;background:none;border:none;color:var(--lac);font-size:11px;font-weight:600;cursor:pointer;padding:3px 0;font-family:inherit;text-decoration:underline" id="saha-cari-btn">📊 Cari hesabı gör →</button>
-      <div id="s-fiyat-bilgi" style="display:none;margin-top:6px;padding:6px 10px;background:#f8f9fa;border-radius:7px;font-size:12px;color:var(--text2)"></div>
-      <div id="s-yakit-kart" style="display:none;margin-top:8px;background:var(--card);border-radius:7px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-size:10px;color:var(--gri);font-weight:600">YAKIT KARTI NO</div>
-          <div style="font-size:14px;font-weight:700;color:var(--lac);letter-spacing:1px" id="s-kart-no">—</div>
-        </div>
-        <button onclick="yakitKartKopyalaAc()" style="background:var(--yes);color:#fff;border:none;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">⛽ Kopyala & Yükle</button>
+      <div id="s-fiyat-bilgi" style="display:none;font-size:12px;background:var(--lac-a);border-radius:7px;padding:6px 10px;margin-top:8px;color:var(--lac)"></div>
+      <div id="s-yakit-kart" style="display:none;font-size:12px;background:var(--tur-a);border-radius:7px;padding:6px 10px;margin-top:6px;color:var(--tur);align-items:center;gap:6px">
+        ⛽ Yakıt Kartı: <span id="s-kart-no" style="font-weight:700"></span>
       </div>
     </div>
-    <div style="background:var(--card)8e1;border-radius:8px;padding:8px 11px;margin-top:8px;font-size:12px;color:#856404">
-      ⚠️ Ziyaret yapabilmek için işletmenin cari kartı olmalı.<br>
-      Yoksa önce cari kart açın:
-    </div>
-    <button class="btn btn-gri" style="margin-top:6px;padding:9px;font-size:13px" onclick="mAc('ymm')">+ Yeni Cari Kart Aç</button>
+    <button class="btn btn-gri" style="margin-top:8px;padding:9px;font-size:13px" onclick="mAc('ymm')">+ Yeni İşletme Ekle</button>
   </div>
-  <div class="card">
-    <div class="ct">Yapılan İşlem</div>
+
+  <!-- ADIM 2: İşlem (işletme seçilince görünür) -->
+  <div class="card" id="saha-adim2" style="display:none">
+    <div class="ct">📋 Adım 2 — Yapılan İşlem</div>
     <div class="islem-sec">
       <button class="ib on" id="ial" onclick="islemSec('alindi',this)">✅ Alım Yapıldı</button>
       <button class="ib kir" id="iyal" onclick="islemSec('alinmadi',this)">❌ Alım Yapılmadı</button>
     </div>
+    <!-- Alım alanı -->
     <div id="alalan">
-      <div class="fg"><label>Kaç Kg? *</label><input type="number" id="skg" placeholder="0" min="0" step="0.5" inputmode="decimal" oninput="otomatikTutar()"></div>
+      <div class="fg"><label>Kaç Kg? *</label>
+        <input type="number" id="skg" placeholder="0" min="0" step="0.5" inputmode="decimal" oninput="otomatikTutar()">
+      </div>
       <div class="ct" style="margin-bottom:7px">Ödeme Türü *</div>
       <div class="odeme-sec">
         <button class="ob on" data-v="Nakit" onclick="odSec(this)">💵 Nakit</button>
-        <button class="ob" data-v="Yakıt Kartı" onclick="odSec(this)">⛽ Yakıt Kartı</button>
+        <button class="ob" data-v="Yakıt Kartı" onclick="odSec(this)">⛽ Yakıt K.</button>
         <button class="ob" data-v="Faturalı" onclick="odSec(this)">🧾 Faturalı</button>
       </div>
-      <div class="fg" id="tfg"><label>Toplam Tutar (₺)</label><input type="number" id="stu" placeholder="0.00" step="0.25" min="0" inputmode="decimal"></div>
-
-      <div id="saha-yakit-kart-alan" style="display:none;background:var(--lac-a);border-radius:8px;padding:10px 12px;margin-top:4px">
-        <div style="font-size:11px;color:var(--gri);font-weight:600;margin-bottom:4px">YAKLAŞAN YAKIT KARTI</div>
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-size:15px;font-weight:700;color:var(--lac);letter-spacing:1px" id="saha-kart-no-goster">—</div>
-          <button onclick="yakitKartKopyalaAc()" style="background:var(--yes);color:#fff;border:none;padding:7px 11px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">⛽ Kopyala & Yükle</button>
-        </div>
+      <div id="saha-yakit-kart-alan" style="display:none;margin-bottom:8px">
+        <label style="font-size:12px;color:var(--gri);font-weight:600;display:block;margin-bottom:3px">Yakıt Kart No</label>
+        <input type="text" id="saha-kart-no-goster" placeholder="Kart no..." style="font-size:13px">
+      </div>
+      <div class="fg" id="tfg">
+        <label>Ödenen Tutar (₺)</label>
+        <input type="number" id="stu" placeholder="0.00" step="0.25" min="0" inputmode="decimal">
       </div>
     </div>
+    <!-- Alınmadı alanı -->
     <div id="dolalan" style="display:none">
       <div class="ct" style="margin-bottom:7px">Doluluk Durumu</div>
       <div class="dol-sec">
@@ -431,35 +433,46 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     </div>
     <div class="fg" style="margin-bottom:0"><label>Not</label><input type="text" id="snot" placeholder="Özel durum..."></div>
   </div>
-  <div style="display:flex;gap:8px">
-    <button class="btn btn-yes" onclick="zvKaydet()" id="zv-kaydet-btn" style="flex:1;margin-bottom:0">📍 Ziyareti Kaydet & Gönder</button>
-    <button id="zv-iptal-btn" onclick="zDuzIptal()" style="display:none;padding:13px 16px;background:#f0f2f5;color:var(--gri);border:none;border-radius:10px;font-size:20px;cursor:pointer;font-weight:700;line-height:1">✕</button>
+
+  <!-- ADIM 3: Kaydet butonu -->
+  <div id="saha-adim3" style="display:none">
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <button class="btn btn-yes" onclick="zvKaydet()" id="zv-kaydet-btn" style="flex:1;margin-bottom:0">📍 Kaydet & Gönder</button>
+      <button id="zv-iptal-btn" onclick="zDuzIptal()" style="display:none;padding:13px 16px;background:#f0f2f5;color:var(--gri);border:none;border-radius:10px;font-size:20px;cursor:pointer;font-weight:700;line-height:1">✕</button>
+    </div>
   </div>
-  <div style="height:8px"></div>
-  <!-- Kayıt sonrası işlemler -->
-  <div id="saha-islemler" style="display:none;margin-top:8px">
-    <div style="background:var(--yes-a);border-radius:12px;padding:14px;margin-bottom:8px">
-      <div style="font-size:13px;font-weight:700;color:var(--yes-d);margin-bottom:10px">✅ Kayıt tamamlandı!</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-        <button class="btn btn-lac" onclick="teslimFisiGoster()" style="padding:11px;margin-bottom:0">🧾 Teslim Fişi</button>
-        <button class="btn btn-gri" id="nakit-mkb-btn" onclick="sahaMakbuzModalAc()" style="padding:11px;margin-bottom:0">💵 Tediye Makbuzu</button>
+
+  <!-- ADIM 4: Kayıt sonrası işlemler -->
+  <div id="saha-islemler" style="display:none">
+    <div style="background:var(--yes-a);border-radius:14px;padding:16px;border:1px solid var(--yes)">
+      <div style="font-size:14px;font-weight:700;color:var(--yes-d);margin-bottom:4px">✅ Kayıt tamamlandı!</div>
+      <div id="saha-kayit-ozet" style="font-size:12px;color:var(--yes-d);margin-bottom:12px"></div>
+      <!-- Fiş & Makbuz -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <button class="btn btn-lac" onclick="teslimFisiGoster()" style="margin-bottom:0;padding:11px">🧾 Teslim Fişi</button>
+        <button class="btn btn-gri" id="nakit-mkb-btn" onclick="sahaMakbuzModalAc()" style="margin-bottom:0;padding:11px">💵 Makbuz</button>
       </div>
-      <!-- Ödeme Girişi - aynı işletme için -->
-      <div style="border-top:1px solid rgba(91,168,50,.3);padding-top:10px;margin-top:2px">
-        <div style="font-size:11px;font-weight:700;color:var(--yes-d);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">💳 Ödeme Kaydet</div>
+      <!-- Ödeme -->
+      <div style="border-top:1px solid rgba(91,168,50,.3);padding-top:12px">
+        <div style="font-size:12px;font-weight:700;color:var(--yes-d);margin-bottom:8px">💳 Ödeme Kaydet (opsiyonel)</div>
         <div id="odeme-isletme-bilgi" style="font-size:12px;color:var(--yes-d);margin-bottom:8px;font-weight:600"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
-          <button class="ob on" id="optur-nakit" onclick="odemeTurSec('Nakit',this)" style="font-size:11px;padding:8px 4px">💵 Nakit</button>
-          <button class="ob" id="optur-yakit" onclick="odemeTurSec('Yakıt Kartı',this)" style="font-size:11px;padding:8px 4px">⛽ Yakıt K.</button>
-          <button class="ob" id="optur-havale" onclick="odemeTurSec('Havale',this)" style="font-size:11px;padding:8px 4px">🏦 Havale</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:8px">
+          <button class="ob on" id="optur-nakit" onclick="odemeTurSec('Nakit',this)" style="font-size:10px;padding:7px 3px">💵 Nakit</button>
+          <button class="ob" id="optur-yakit" onclick="odemeTurSec('Yakıt Kartı',this)" style="font-size:10px;padding:7px 3px">⛽ Yakıt</button>
+          <button class="ob" id="optur-havale" onclick="odemeTurSec('Havale',this)" style="font-size:10px;padding:7px 3px">🏦 Havale</button>
         </div>
-        <input type="number" id="odeme-tutar" placeholder="Tutar (₺)..." inputmode="decimal" step="0.01" style="margin-bottom:6px">
-        <input type="text" id="odeme-aciklama" placeholder="Açıklama (fatura tarihi vb.)..." style="margin-bottom:8px">
-        <button class="btn btn-lac" onclick="odemeKaydet()" style="padding:10px;margin-bottom:0">💾 Ödemeyi Kaydet</button>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:6px">
+          <input type="number" id="odeme-tutar" placeholder="Tutar (₺)..." inputmode="decimal" step="0.01" style="margin-bottom:0">
+          <button class="btn btn-lac" onclick="odemeKaydet()" style="padding:10px 14px;margin-bottom:0;white-space:nowrap">💾 Kaydet</button>
+        </div>
+        <input type="text" id="odeme-aciklama" placeholder="Açıklama..." style="margin-top:6px">
       </div>
+      <!-- Yeni kayıt -->
+      <button onclick="sahaTemizle()" style="margin-top:12px;width:100%;padding:10px;background:rgba(0,0,0,.06);border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--yes-d)">📍 Yeni İşletme Kaydet</button>
     </div>
   </div>
 </div>
+
 
 <!-- KAYITLAR -->
 <div class="panel" id="p-kayitlar">
@@ -666,6 +679,13 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     </div>
     <!-- Hareket listesi -->
     <div id="cari-liste"></div>
+    <!-- WhatsApp paylaş -->
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid #f0f0f0">
+      <button onclick="cariWhatsApp()" style="width:100%;padding:13px;background:#25D366;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.098.543 4.067 1.49 5.785L.057 23.514l5.886-1.543A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.847 0-3.575-.496-5.063-1.365l-.363-.215-3.495.917.932-3.407-.236-.374A9.972 9.972 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        WhatsApp ile Ekstre Gönder
+      </button>
+    </div>
   </div>
 </div>
 
@@ -1173,7 +1193,9 @@ function mstSec(m){
       fiyatBilgi.style.display='block';
     }
   }
-  // Saha işlemler alanını sıfırla
+  // Adım 2 ve 3'ü göster
+  const a2=el('saha-adim2');if(a2)a2.style.display='block';
+  const a3=el('saha-adim3');if(a3)a3.style.display='block';
   el('saha-islemler').style.display='none';
   // Cari bakiye göster
   const sahaCariBilgi=el('saha-cari-bilgi');
@@ -1242,9 +1264,12 @@ async function zvKaydet(){
     z.saat=eskiZ?eskiZ.saat:z.saat;
     if(duzIdx!==-1){zvr[duzIdx]=z;}
     else{zvr.unshift(z);}
-    // Sheets'ten eski kaydı sil, yenisini ekle
+    // Sheets güncelle: eski sil, yeni ekle
+    // silzvr listesine ekle - sync'te geri gelmesin
+    const _silZvr=JSON.parse(localStorage.getItem('silzvr')||'[]');
+    if(!_silZvr.includes(String(duzZiyaretId))){_silZvr.push(String(duzZiyaretId));localStorage.setItem('silzvr',JSON.stringify(_silZvr));}
     shSil('deleteZiyaret',duzZiyaretId);
-    setTimeout(()=>shG('addZiyaret',z),1000); // 1sn bekle - silme tamamlansın
+    setTimeout(()=>shG('addZiyaret',z),1000);
     duzZiyaretId=null;
     const kaydetBtn=document.querySelector('#p-saha .btn-yes');
     if(kaydetBtn){kaydetBtn.textContent='📍 Ziyareti Kaydet & Gönder';kaydetBtn.style.background='var(--yes)';}
@@ -1259,6 +1284,10 @@ async function zvKaydet(){
     const si=el('saha-islemler');
     if(si){
       si.style.display='block';
+      // Kayıt özeti
+      const sko=el('saha-kayit-ozet');
+      if(sko&&z.islem==='Alım Yapıldı')sko.textContent=z.kg+' kg · '+z.odemeTuru+(z.tutar?' · '+z.tutar+'₺':'');
+      else if(sko)sko.textContent='Alım yapılmadı · %'+z.doluluk+' dolu';
       const oib=el('odeme-isletme-bilgi');
       if(oib&&sMstSon)oib.textContent='🏪 '+sMstSon.isim+(sMstSon.il?' · '+sMstSon.il:'');
     }
@@ -1291,12 +1320,16 @@ async function zvKaydet(){
   const kb=document.querySelector('#p-saha .btn-yes');
   if(kb){kb.textContent='📍 Ziyareti Kaydet & Gönder';kb.style.background='var(--yes)';}
   raporRender();zvRender();kListele();
-  // Teslim fişi ve makbuz butonlarını göster
-  el('saha-islemler').style.display='block';
-  el('nakit-mkb-btn').style.display='block';
-  // Ödeme formuna işletme adını yaz
-  const odemeIb=el('odeme-isletme-bilgi');
-  if(odemeIb&&sMstSon)odemeIb.textContent='🏪 '+sMstSon.isim+(sMstSon.il?' · '+sMstSon.il:'');
+  // Saha-islemler göster
+  const _si=el('saha-islemler');
+  if(_si){
+    _si.style.display='block';
+    const _sko=el('saha-kayit-ozet');
+    if(_sko&&z.islem==='Alım Yapıldı')_sko.textContent=z.kg+' kg · '+z.odemeTuru+(z.tutar?' · '+parseFloat(z.tutar).toFixed(2)+'₺':'');
+    else if(_sko)_sko.textContent='Alım yapılmadı · %'+z.doluluk+' dolu';
+    const _oib=el('odeme-isletme-bilgi');
+    if(_oib&&sMstSon)_oib.textContent='🏪 '+sMstSon.isim+(sMstSon.il?' · '+sMstSon.il:'');
+  }
   nav('saha',document.querySelectorAll('.nb')[2]);
 }
 
@@ -2966,8 +2999,38 @@ function zDuzIptal(){
   // Saha-islemler gizle
   const si=el('saha-islemler');if(si)si.style.display='none';
   // Kayıtlara geri dön
+  // Adım 2 ve 3'ü gizle
+  const _a2=el('saha-adim2');if(_a2)_a2.style.display='none';
+  const _a3=el('saha-adim3');if(_a3)_a3.style.display='none';
   nav('kayitlar',document.querySelectorAll('.nb')[3]);
   dm('Düzenleme iptal edildi','info');
+}
+
+function sahaTemizle(){
+  // Kayıt sonrası yeni işletme için tam sıfırla
+  sMst=null; sMstSon=null; duzZiyaretId=null;
+  el('sa').value=''; el('sar').style.display='none'; el('ss').style.display='none';
+  const skg=el('skg');if(skg)skg.value='';
+  const stu=el('stu');if(stu)stu.value='';
+  const snot=el('snot');if(snot)snot.value='';
+  const ot=el('odeme-tutar');if(ot)ot.value='';
+  const oa=el('odeme-aciklama');if(oa)oa.value='';
+  const sfb=el('s-fiyat-bilgi');if(sfb)sfb.style.display='none';
+  const scb=el('saha-cari-bilgi');if(scb)scb.style.display='none';
+  const sccb=el('saha-cari-btn');if(sccb)sccb.style.display='none';
+  const si=el('saha-islemler');if(si)si.style.display='none';
+  const a2=el('saha-adim2');if(a2)a2.style.display='none';
+  const a3=el('saha-adim3');if(a3)a3.style.display='none';
+  // İslem sıfırla
+  sIslem='alindi';sDol='50';
+  const ial=el('ial');if(ial)islemSec('alindi',ial);
+  // Kaydet butonu sıfırla
+  const kb=el('zv-kaydet-btn');
+  if(kb){kb.textContent='📍 Kaydet & Gönder';kb.style.background='';}
+  const ib=el('zv-iptal-btn');if(ib)ib.style.display='none';
+  // Sayfanın üstüne scroll
+  window.scrollTo({top:0,behavior:'smooth'});
+  el('sa').focus();
 }
 
 
@@ -3241,14 +3304,61 @@ function cariAlimDuz(zId, musteriId){
 }
 
 // cariAc'tan sonra modal kapatılınca mlRender çağır (bakiye güncel kalsın)
-const _origMKapat=mKapat;
-mKapat=function(id){
-  _origMKapat(id);
-  if(id==='cari-m'||id==='odeme-duz-m'){
-    setTimeout(mlRender,100);
-    setTimeout(()=>{if(document.getElementById('p-rapor')?.classList.contains('on')){alimOzetRender();}},200);
+
+
+
+//=== CARİ EKSTRE WHATSAPP PAYLAŞIMI ===
+function cariWhatsApp(){
+  if(!cariAktifId){dm('Önce bir işletme seçin','err');return;}
+  const m=mst.find(x=>String(x.id)===String(cariAktifId));
+  if(!m){dm('İşletme bulunamadı','err');return;}
+  const {alimlar,odemeler}=cariHareketleri(cariAktifId);
+  const {borcToplam,odemeToplam,bakiye}=cariBakiye(cariAktifId);
+
+  // Ekstre metni oluştur
+  let metin='';
+  metin+='🧾 *EKOSAKsa CARİ HESAP EKSTRESİ*\n';
+  metin+='━━━━━━━━━━━━━━━━━━━━\n';
+  metin+='🏪 *'+m.isim+'*\n';
+  if(m.il)metin+='📍 '+m.il+(m.bolge?' / '+m.bolge:'')+'\n';
+  metin+='📅 Tarih: '+bug()+'\n';
+  metin+='━━━━━━━━━━━━━━━━━━━━\n\n';
+
+  if(alimlar.length){
+    metin+='📦 *ALIMLAR ('+alimlar.length+')*\n';
+    alimlar.slice(0,10).forEach((z,i)=>{
+      const kg=parseFloat(z.kg)||0;
+      const bf=parseFloat(z.birimFiyat)||0;
+      const tutar=bf>0&&kg>0?(kg*bf):parseFloat(z.tutar)||0;
+      const tarih=z.tarih.includes('T')?ft2(z.tarih):z.tarih;
+      metin+='  '+(i+1)+'. '+tarih+' — '+kg+' kg × '+(bf||'—')+'₺ = *'+tutar.toFixed(2)+'₺* ('+z.odemeTuru+')\n';
+    });
+    if(alimlar.length>10)metin+='  ... ve '+(alimlar.length-10)+' alım daha\n';
+    metin+='\n';
   }
-};
+
+  if(odemeler.length){
+    metin+='💳 *ÖDEMELER ('+odemeler.length+')*\n';
+    odemeler.slice(0,10).forEach((z,i)=>{
+      const tarih=z.tarih.includes('T')?ft2(z.tarih):z.tarih;
+      metin+='  '+(i+1)+'. '+tarih+' — *'+parseFloat(z.tutar||0).toFixed(2)+'₺* ('+z.odemeTuru+')\n';
+    });
+    if(odemeler.length>10)metin+='  ... ve '+(odemeler.length-10)+' ödeme daha\n';
+    metin+='\n';
+  }
+
+  metin+='━━━━━━━━━━━━━━━━━━━━\n';
+  metin+='💰 Toplam Borç: *'+borcToplam.toFixed(2)+'₺*\n';
+  metin+='✅ Toplam Ödeme: *'+odemeToplam.toFixed(2)+'₺*\n';
+  if(bakiye>0) metin+='⚠️ Kalan Borç: *'+bakiye.toFixed(2)+'₺*\n';
+  else if(bakiye<0) metin+='💚 Fazla Ödeme: *'+Math.abs(bakiye).toFixed(2)+'₺*\n';
+  else metin+='✅ *Bakiye Sıfır*\n';
+  metin+='━━━━━━━━━━━━━━━━━━━━\n';
+  metin+='_Ekosa Çevre Çözümleri_';
+
+  const url='https://wa.me/?text='+encodeURIComponent(metin);
+  window.open(url,'_blank');
+}
 
 function bhKopyala(){
   const metin=el('bh-icerik').textContent;
@@ -3768,7 +3878,13 @@ function nav(id,btn){
   if(id==='ziyaret')zvRender();if(id==='teklif')tListele();if(id==='kayitlar')kListele();if(id==='musteriler')mlRender();if(id==='makbuz')setTimeout(mkbListeYukle,300);if(id==='rapor'){alimOzetRender();perPerfRender();setTimeout(haftalikGrafikCiz,200);takipBadgeGuncelle();yeniMusteriRender();takipGeldiRender();}
 }
 function mAc(id){el(id).classList.add('open');}
-function mKapat(id){el(id).classList.remove('open');}
+function mKapat(id){
+  const e=el(id);if(e)e.classList.remove('open');
+  // Cari veya ödeme modalı kapanınca senkronize et
+  if(id==='cari-m'||id==='odeme-duz-m'){
+    setTimeout(()=>{mlRender();if(el('p-rapor')?.classList.contains('on'))alimOzetRender();},150);
+  }
+}
 function el(id){return document.getElementById(id);}
 function shG(action,data){
   try{
