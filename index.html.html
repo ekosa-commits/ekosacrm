@@ -1376,8 +1376,10 @@ function kListele(){
       ${al?`<div class="kd">${z.kg} kg${z.tutar?' · '+z.tutar+'₺':''}</div>`:''}
       <span class="kb ${bc}">${etiket}</span>
       ${z.notlar?`<div class="kd" style="font-style:italic;margin-top:3px">${z.notlar}</div>`:''}
-      <div style="display:flex;gap:6px;margin-top:6px">
-        <button class="btn-sm" style="background:var(--lac-a);color:var(--lac);flex:1" onclick="${odeme?'odemeDuz':'zDuz'}(${z.id})">✎ Düzenle</button>
+      <div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap">
+        <button class="btn-sm" style="background:var(--lac-a);color:var(--lac);flex:2" onclick="${odeme?'odemeDuz':'zDuz'}(${z.id})">✎ Düzenle</button>
+        ${al?`<button class="btn-sm" style="background:var(--yes-a);color:var(--yes-d)" onclick="kListeleFis('${z.id}')">🧾 Fiş</button>`:''}
+        ${odeme?`<button class="btn-sm" style="background:var(--lac-a);color:var(--lac)" onclick="kListeleMakbuz('${z.id}')">💵 Makbuz</button>`:''}
         <button class="btn-sm" style="background:var(--kir-a);color:var(--kir)" onclick="zSil(${z.id})">🗑</button>
       </div>
     </div>`;
@@ -3212,6 +3214,240 @@ function genelCariRaporu(){
   if(!tmpDiv){tmpDiv=document.createElement('div');tmpDiv.id='cari-genel-div';bhIcerik&&bhIcerik.parentNode.insertBefore(tmpDiv,bhIcerik);}
   tmpDiv.innerHTML=h;
   mAc('bh-m');
+}
+
+
+//=== KAYITLAR - FİŞ VE MAKBUZ ===
+function kListeleFis(zId){
+  const z=zvr.find(x=>String(x.id)===String(zId));
+  if(!z){dm('Kayıt bulunamadı','err');return;}
+  const m=mst.find(x=>String(x.id)===String(z.musteriId));
+  if(!m){dm('İşletme bulunamadı','err');return;}
+  // sonKaydedilenZ ve sMstSon'u geçici set et
+  sonKaydedilenZ=Object.assign({},z);
+  sMstSon=Object.assign({},m);
+  teslimFisiGoster();
+}
+
+function kListeleMakbuz(zId){
+  const z=zvr.find(x=>String(x.id)===String(zId));
+  if(!z){dm('Kayıt bulunamadı','err');return;}
+  const m=mst.find(x=>String(x.id)===String(z.musteriId));
+  if(!m){dm('İşletme bulunamadı','err');return;}
+  // sonKaydedilenZ ve sMstSon'u geçici set et
+  sonKaydedilenZ=Object.assign({},z);
+  sMstSon=Object.assign({},m);
+  sahaMakbuzModalAc();
+}
+
+//=== CARİ EKSTRE PDF + WHATSAPP ===
+const EKOSA_LOGO="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgNjAiIHdpZHRoPSIyMDAiIGhlaWdodD0iNjAiPgogIDxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iNjAiIHJ4PSI4IiBmaWxsPSIjMUUyRDZCIi8+CiAgPHRleHQgeD0iMjAiIHk9IjM4IiBmb250LWZhbWlseT0iQXJpYWwgQmxhY2ssQXJpYWwiIGZvbnQtd2VpZ2h0PSI5MDAiIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiM3QUI5MjkiPkVLT1NBPC90ZXh0PgogIDx0ZXh0IHg9IjExMCIgeT0iMzIiIGZvbnQtZmFtaWx5PSJBcmlhbCxzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuOCkiPsOHRVZSRTwvdGV4dD4KICA8dGV4dCB4PSIxMTAiIHk9IjQ0IiBmb250LWZhbWlseT0iQXJpYWwsc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMCIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjgpIj7Dh8OWWsOcTUxFUsSwPC90ZXh0Pgo8L3N2Zz4=";
+
+function cariWhatsApp(){
+  if(!cariAktifId){dm('Önce bir işletme seçin','err');return;}
+  const m=mst.find(x=>String(x.id)===String(cariAktifId));
+  if(!m){dm('İşletme bulunamadı','err');return;}
+  // PDF üret ve paylaş
+  cariEkstrePdfOlustur(m);
+}
+
+function cariEkstrePdfOlustur(m){
+  const {alimlar,odemeler}=cariHareketleri(m.id);
+  const {borcToplam,odemeToplam,bakiye}=cariBakiye(m.id);
+
+  const tarih=bug();
+  const bakiyeRenk=bakiye>0?'#C0392B':bakiye<0?'#6B3FA0':'#27AE60';
+  const bakiyeEtiket=bakiye>0?'ÖDENMEMIŞ BORÇ':bakiye<0?'FAZLA ÖDEME':'BAKİYE SIFIR';
+
+  // Alım satırları
+  let alimSatirlar='';
+  alimlar.slice(0,20).forEach((z,i)=>{
+    const td=z.tarih.includes('T')?ft2(z.tarih):z.tarih;
+    const kg=parseFloat(z.kg)||0;
+    const bf=parseFloat(z.birimFiyat)||0;
+    const tutar=bf>0&&kg>0?(kg*bf):parseFloat(z.tutar)||0;
+    const kdvVar=z.odemeTuru==='Faturalı'||z.odemeTuru==='Yakıt Kartı';
+    const net=kdvVar?bf/1.20:bf;
+    alimSatirlar+=`<tr style="background:${i%2===0?'#fff':'#fafafa'}">
+      <td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:12px">${td}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:12px;text-align:center">${kg}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:12px;text-align:center">${z.odemeTuru}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:12px;text-align:right;color:#C0392B;font-weight:600">${tutar.toFixed(2)}₺</td>
+    </tr>`;
+  });
+  if(alimlar.length>20)alimSatirlar+=`<tr><td colspan="4" style="padding:6px 10px;font-size:11px;color:#888;text-align:center">... +${alimlar.length-20} alım daha</td></tr>`;
+
+  // Ödeme satırları
+  let odemeSatirlar='';
+  odemeler.slice(0,15).forEach((z,i)=>{
+    const td=z.tarih.includes('T')?ft2(z.tarih):z.tarih;
+    const tutar=parseFloat(z.tutar)||0;
+    odemeSatirlar+=`<tr style="background:${i%2===0?'#fff':'#fafafa'}">
+      <td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:12px">${td}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:12px">${z.odemeTuru}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:12px;color:#888;font-style:italic">${z.notlar||''}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #eee;font-size:12px;text-align:right;color:#27AE60;font-weight:600">${tutar.toFixed(2)}₺</td>
+    </tr>`;
+  });
+
+  const htmlIcerik=`<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cari Ekstre — ${m.isim}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:Arial,sans-serif;background:#f0f2f5;color:#222;}
+  .page{max-width:680px;margin:20px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.12);}
+  .header{background:linear-gradient(135deg,#1E2D6B,#162255);padding:24px 28px;display:flex;justify-content:space-between;align-items:center;}
+  .logo-wrap{background:#fff;border-radius:10px;padding:8px 14px;}
+  .logo-txt{font-size:24px;font-weight:900;color:#7AB929;letter-spacing:1px;}
+  .logo-sub{font-size:9px;color:#444;display:block;margin-top:-2px;}
+  .header-info{text-align:right;}
+  .header-info .ttl{color:#fff;font-size:18px;font-weight:700;letter-spacing:.5px;}
+  .header-info .dt{color:rgba(255,255,255,.6);font-size:12px;margin-top:4px;}
+  .isletme-bar{background:#f8f9ff;border-left:4px solid #1E2D6B;padding:14px 28px;border-bottom:1px solid #e8ecf4;}
+  .isletme-bar .nm{font-size:16px;font-weight:700;color:#1E2D6B;}
+  .isletme-bar .sub{font-size:12px;color:#888;margin-top:3px;}
+  .ozet{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-bottom:3px solid #1E2D6B;}
+  .ozet-kart{padding:16px;text-align:center;border-right:1px solid #e8ecf4;}
+  .ozet-kart:last-child{border-right:none;}
+  .ozet-kart .lbl{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+  .ozet-kart .val{font-size:20px;font-weight:800;}
+  .section{padding:20px 28px;}
+  .section-ttl{font-size:12px;font-weight:700;color:#1E2D6B;text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #7AB929;}
+  table{width:100%;border-collapse:collapse;}
+  thead tr{background:#1E2D6B;}
+  thead td{padding:8px 10px;font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.4px;}
+  .bakiye-box{background:${bakiyeRenk};margin:0 28px 24px;border-radius:10px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;}
+  .bakiye-box .lbl{color:rgba(255,255,255,.85);font-size:12px;font-weight:600;}
+  .bakiye-box .val{color:#fff;font-size:26px;font-weight:900;}
+  .footer{background:#f8f9ff;padding:14px 28px;text-align:center;font-size:11px;color:#aaa;border-top:1px solid #e8ecf4;}
+</style>
+</head>
+<body>
+<div class="page">
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-wrap">
+      <div class="logo-txt">EKOSA</div>
+      <span class="logo-sub">ÇEVRE ÇÖZÜMLERİ</span>
+    </div>
+    <div class="header-info">
+      <div class="ttl">CARİ HESAP EKSTRESİ</div>
+      <div class="dt">Tarih: ${tarih}</div>
+    </div>
+  </div>
+  <!-- İşletme -->
+  <div class="isletme-bar">
+    <div class="nm">${m.isim}</div>
+    <div class="sub">${m.il||''}${m.bolge?' / '+m.bolge:''}${m.adres?' | '+m.adres:''}</div>
+  </div>
+  <!-- Özet -->
+  <div class="ozet">
+    <div class="ozet-kart">
+      <div class="lbl">Toplam Borç</div>
+      <div class="val" style="color:#C0392B">${borcToplam.toFixed(2)}₺</div>
+      <div style="font-size:11px;color:#888;margin-top:4px">${alimlar.length} alım kaydı</div>
+    </div>
+    <div class="ozet-kart">
+      <div class="lbl">Toplam Ödeme</div>
+      <div class="val" style="color:#27AE60">${odemeToplam.toFixed(2)}₺</div>
+      <div style="font-size:11px;color:#888;margin-top:4px">${odemeler.length} ödeme kaydı</div>
+    </div>
+    <div class="ozet-kart">
+      <div class="lbl">Net Bakiye</div>
+      <div class="val" style="color:${bakiyeRenk}">${Math.abs(bakiye).toFixed(2)}₺</div>
+      <div style="font-size:11px;color:${bakiyeRenk};font-weight:600;margin-top:4px">${bakiyeEtiket}</div>
+    </div>
+  </div>
+  ${alimSatirlar?`
+  <!-- Alımlar -->
+  <div class="section">
+    <div class="section-ttl">📦 Alım Hareketleri</div>
+    <table>
+      <thead><tr>
+        <td>Tarih</td><td style="text-align:center">Miktar</td><td style="text-align:center">Ödeme Türü</td><td style="text-align:right">Tutar</td>
+      </tr></thead>
+      <tbody>${alimSatirlar}</tbody>
+      <tr style="background:#fef9f9"><td colspan="3" style="padding:8px 10px;font-size:12px;font-weight:700;text-align:right;color:#888">Toplam Borç:</td>
+        <td style="padding:8px 10px;font-size:14px;font-weight:800;text-align:right;color:#C0392B">${borcToplam.toFixed(2)}₺</td></tr>
+    </table>
+  </div>`:''}
+  ${odemeSatirlar?`
+  <!-- Ödemeler -->
+  <div class="section" style="padding-top:0">
+    <div class="section-ttl">💳 Ödeme Hareketleri</div>
+    <table>
+      <thead><tr>
+        <td>Tarih</td><td>Ödeme Türü</td><td>Açıklama</td><td style="text-align:right">Tutar</td>
+      </tr></thead>
+      <tbody>${odemeSatirlar}</tbody>
+      <tr style="background:#f0fff4"><td colspan="3" style="padding:8px 10px;font-size:12px;font-weight:700;text-align:right;color:#888">Toplam Ödeme:</td>
+        <td style="padding:8px 10px;font-size:14px;font-weight:800;text-align:right;color:#27AE60">${odemeToplam.toFixed(2)}₺</td></tr>
+    </table>
+  </div>`:''}
+  <!-- Bakiye kutusu -->
+  <div class="bakiye-box">
+    <div>
+      <div class="lbl">${bakiyeEtiket}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:3px">${tarih} itibarıyla</div>
+    </div>
+    <div class="val">${Math.abs(bakiye).toFixed(2)}₺</div>
+  </div>
+  <div class="footer">
+    Ekosa Çevre Çözümleri Gıda Hay. San. Tic. Ltd. Şti. &nbsp;|&nbsp; Bitkisel Atık Yağ Toplama &nbsp;|&nbsp; Bu ekstre bilgi amaçlıdır
+  </div>
+</div>
+</body>
+</html>`;
+
+  // Yeni sekmede aç - yazdır/paylaş
+  const blob=new Blob([htmlIcerik],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const w=window.open(url,'_blank');
+  if(!w){
+    dm('Açma izni engellendi, lütfen pop-up izni verin','err');
+    return;
+  }
+  // Pencere yüklenince yazdır diyaloğu göster + whatsapp seçeneği
+  w.onload=()=>{
+    // WhatsApp paylaş seçeneği
+    const btnDiv=w.document.createElement('div');
+    btnDiv.style.cssText='position:fixed;top:0;left:0;right:0;background:#1E2D6B;padding:10px 20px;display:flex;gap:10px;align-items:center;z-index:999;box-shadow:0 2px 12px rgba(0,0,0,.3)';
+    const waBtn=w.document.createElement('button');
+    waBtn.style.cssText='background:#25D366;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:Arial';
+    waBtn.textContent='📤 WhatsApp ile Paylaş';
+    waBtn.onclick=()=>{
+      // Web Share API ile paylaş
+      if(navigator.share&&navigator.canShare){
+        const dosya=new File([blob],'cari-ekstre-${m.isim.replace(/[^a-zA-Z0-9]/g,"-")}.html',{type:'text/html'});
+        if(navigator.canShare({files:[dosya]})){
+          navigator.share({files:[dosya],title:'Cari Ekstre — ${m.isim}',text:'Cari hesap ekstreniz ekte yer almaktadır.'}).catch(()=>{});
+          return;
+        }
+      }
+      // Fallback: WhatsApp web ile metin mesajı
+      const {borcToplam:bt,odemeToplam:ot,bakiye:bk}=cariBakiye('${m.id}');
+      const txt='🧾 *CARİ HESAP EKSTRESİ*%0A*Ekosa Çevre Çözümleri*%0A━━━━━━━━━━━━%0A🏪 *${m.isim}*%0A📅 ${tarih}%0A━━━━━━━━━━━━%0A📦 Toplam Borç: *'+bt.toFixed(2)+'₺*%0A💳 Toplam Ödeme: *'+ot.toFixed(2)+'₺*%0A'+(bk>0?'⚠️ Kalan: *'+bk.toFixed(2)+'₺*':'✅ Bakiye: *0₺*')+'%0A━━━━━━━━━━━━';
+      window.open('https://wa.me/?text='+txt,'_blank');
+    };
+    const prtBtn=w.document.createElement('button');
+    prtBtn.style.cssText='background:rgba(255,255,255,.15);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Arial';
+    prtBtn.textContent='🖨️ Yazdır / PDF';
+    prtBtn.onclick=()=>w.print();
+    const kapBtn=w.document.createElement('button');
+    kapBtn.style.cssText='background:rgba(255,255,255,.1);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;margin-left:auto;font-family:Arial';
+    kapBtn.textContent='✕ Kapat';
+    kapBtn.onclick=()=>w.close();
+    btnDiv.appendChild(waBtn);
+    btnDiv.appendChild(prtBtn);
+    btnDiv.appendChild(kapBtn);
+    w.document.body.prepend(btnDiv);
+    w.document.body.style.paddingTop='52px';
+  };
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 
 function bhKopyala(){
