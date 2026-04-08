@@ -248,6 +248,7 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     <label>Şifre</label>
     <input type="password" id="gs" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')giris()">
     <button class="g-btn" onclick="giris()" id="gbtn">Giriş Yap</button>
+    <button onclick="appsScriptTest()" style="margin-top:8px;width:100%;padding:10px;background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.7);border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit">🔧 Sunucu Bağlantı Testi</button>
     <div class="g-hata" id="ghata"></div>
   </div>
   <div class="g-yukl" id="gyukl">Doğrulanıyor...</div>
@@ -1043,27 +1044,46 @@ let mkbNo=parseInt(localStorage.getItem('mn')||'0');
 let stimer=null;
 
 //=== GİRİŞ ===
+
+function appsScriptTest(){
+  const h=el('ghata');
+  if(h)h.textContent='Test ediliyor...';
+  fetch(SURL+'?action=ping&token='+_T,{redirect:'follow'})
+    .then(r=>r.text())
+    .then(t=>{if(h)h.textContent='✓ Sunucu yanıtı: '+t.substring(0,80);})
+    .catch(e=>{if(h)h.textContent='✗ Sunucuya ulaşılamıyor: '+e.message+' — Google Apps Script deploy edilmeli!';});
+}
+
 async function giris(){
   const ku=el('gu').value.trim(),si=el('gs').value;
   if(!ku||!si){ghata('Kullanıcı adı ve şifre girin');return;}
-  el('gbtn').disabled=true;el('gbtn').textContent='Doğrulanıyor...';
+  el('gbtn').disabled=true;el('gbtn').textContent='Bağlanıyor...';
   el('gyukl').style.display='block';el('ghata').textContent='';
   try{
     const loginUrl=SURL+'?action=login&kullanici='+encodeURIComponent(ku)+'&sifre='+encodeURIComponent(si);
     const ctrl=new AbortController();
-    const tid=setTimeout(()=>ctrl.abort(),8000); // 8sn timeout
+    const tid=setTimeout(()=>ctrl.abort(),15000);
     const r=await fetch(loginUrl,{redirect:'follow',signal:ctrl.signal});
     clearTimeout(tid);
     const txt=await r.text();
     let d;
-    try{d=JSON.parse(txt);}catch(pe){ghata('Sunucu yanıt hatası: '+txt.substring(0,80));el('gbtn').disabled=false;el('gbtn').textContent='Giriş Yap';el('gyukl').style.display='none';return;}
+    try{d=JSON.parse(txt);}catch(pe){
+      ghata('Sunucu yanıt hatası (JSON değil): '+txt.substring(0,120));
+      el('gbtn').disabled=false;el('gbtn').textContent='Giriş Yap';el('gyukl').style.display='none';return;
+    }
     if(d.ok){otr=d.kullanici;localStorage.setItem('o',JSON.stringify(otr));gBasarili();}
     else{ghata(d.msg||'Hatalı kullanıcı adı veya şifre');el('gbtn').disabled=false;el('gbtn').textContent='Giriş Yap';el('gyukl').style.display='none';}
   }catch(e){
-    // Çevrimdışı - lokal kontrol
+    const hata=e.name==='AbortError'?'Zaman aşımı - sunucuya ulaşılamıyor':'Ağ hatası: '+e.message;
     const lk=kul.find(k=>k.ku===ku&&k.si===si&&k.a!==false);
-    if(lk){otr={id:lk.id,kullaniciAdi:ku,adSoyad:lk.ad,rol:lk.rol,il:lk.il||''};localStorage.setItem('o',JSON.stringify(otr));gBasarili();}
-    else{ghata('Hata: '+e.message);el('gbtn').disabled=false;el('gbtn').textContent='Giriş Yap';el('gyukl').style.display='none';}
+    if(lk){
+      otr={id:lk.id,kullaniciAdi:ku,adSoyad:lk.ad,rol:lk.rol,il:lk.il||''};
+      localStorage.setItem('o',JSON.stringify(otr));
+      gBasarili();
+    } else {
+      ghata(hata);
+      el('gbtn').disabled=false;el('gbtn').textContent='Giriş Yap';el('gyukl').style.display='none';
+    }
   }
 }
 
