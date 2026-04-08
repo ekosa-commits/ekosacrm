@@ -3463,6 +3463,23 @@ function cariEkstrePdfOlustur(mParam){
   w.document.close();
 }
 
+function mkbBilgi(){
+  mkbNo++;
+  localStorage.setItem('mn',String(mkbNo));
+  const e1=el('smkb-no');if(e1)e1.value='MKB-'+String(mkbNo).padStart(4,'0');
+  const e2=el('smkb-tar');if(e2)e2.value=bug();
+}
+function smkbYazi(){
+  const v_=(el('smkb-mk')||{value:''}).value.replace(',','.');
+  const n_=parseFloat(v_);
+  const e_=el('smkb-yz');
+  if(!isNaN(n_)&&n_>0){
+    const t_=Math.floor(n_);const k_=Math.round((n_-t_)*100);
+    let y_=sy(t_)+' Türk Lirası';if(k_>0)y_+=' '+sy(k_)+' Kuruş';
+    if(e_){e_.textContent='('+y_+')';e_.style.display='block';}
+  }else{if(e_)e_.style.display='none';}
+}
+
 //=== UYGULAMA BAŞLATMA ===
 mkbBilgi();ddDoldur();
 if(otr){
