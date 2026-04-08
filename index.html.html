@@ -3463,3 +3463,17 @@ function cariEkstrePdfOlustur(mParam){
   w.document.close();
 }
 
+//=== UYGULAMA BAŞLATMA ===
+mkbBilgi();ddDoldur();
+if(otr){
+  el('giris').classList.add('gizle');el('ana').classList.add('ac');
+  el('ha').textContent=otr.adSoyad||otr.kullaniciAdi;
+  el('gb').textContent=otr.adSoyad||otr.kullaniciAdi;
+  el('gr').textContent=otr.rol==='admin'?'Yönetici':'Personel';
+  if(otr.rol==='admin')el('ybölüm').style.display='block';
+  raporRender();tListele();kListele();
+  setTimeout(()=>{alimOzetRender();perPerfRender();setTimeout(haftalikGrafikCiz,300);takipBadgeGuncelle();teklifHuniRender();yeniMusteriRender();takipGeldiRender();sozlesmeUyariRender();},500);
+  sync(false);stimer=setInterval(()=>sync(false),30000);
+  window.addEventListener('online',()=>{dm('✓ İnternet bağlandı','ok');sync(false);});
+}
+
