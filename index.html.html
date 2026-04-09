@@ -234,6 +234,11 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
 .bos{text-align:center;padding:36px 16px;color:#bbb;font-size:14px;line-height:1.8}
 #toast{display:none}
 </style>
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Ekosa CRM">
+  <meta name="theme-color" content="#1E2D6B">
 </head>
 <body>
 
@@ -387,7 +392,10 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
       </div>
       <div id="s-fiyat-bilgi" style="display:none;font-size:12px;background:var(--lac-a);border-radius:7px;padding:6px 10px;margin-top:8px;color:var(--lac)"></div>
       <div id="s-yakit-kart" style="display:none;font-size:12px;background:var(--tur-a);border-radius:7px;padding:6px 10px;margin-top:6px;color:var(--tur);align-items:center;gap:6px">
-        ⛽ Yakıt Kartı: <span id="s-kart-no" style="font-weight:700"></span>
+        <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+          <span>⛽ <span id="s-kart-no" style="font-weight:700"></span></span>
+          <button onclick="yakitKartKopyalaAc()" style="background:var(--tur);color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">📋 Kopyala & Shell</button>
+        </div>
       </div>
     </div>
     <button class="btn btn-gri" style="margin-top:8px;padding:9px;font-size:13px" onclick="mAc('ymm')">+ Yeni İşletme Ekle</button>
@@ -413,7 +421,10 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
       </div>
       <div id="saha-yakit-kart-alan" style="display:none;margin-bottom:8px">
         <label style="font-size:12px;color:var(--gri);font-weight:600;display:block;margin-bottom:3px">Yakıt Kart No</label>
-        <input type="text" id="saha-kart-no-goster" placeholder="Kart no..." style="font-size:13px">
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="saha-kart-no-goster" placeholder="Kart no..." style="font-size:13px;flex:1;margin-bottom:0">
+          <button onclick="yakitKartKopyalaAc()" style="background:var(--tur);color:#fff;border:none;padding:10px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">📋 Shell</button>
+        </div>
       </div>
       <div class="fg" id="tfg">
         <label>Ödenen Tutar (₺)</label>
@@ -621,10 +632,17 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
   <div class="modal">
     <div class="mttl"><span>⚙ Ayarlar</span><button class="mkapat" onclick="mKapat('am')">×</button></div>
     <div style="background:var(--lac-a);border-radius:9px;padding:11px 13px;margin-bottom:12px">
-      <div style="font-size:13px;font-weight:600;color:var(--lac)" id="gb">—</div>
-      <div style="font-size:11px;color:var(--gri);margin-top:2px" id="gr">—</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--lac)" id="gb">—</div>
+          <div style="font-size:11px;color:var(--gri);margin-top:2px" id="gr">—</div>
+        </div>
+        <button id="bildirim-btn" onclick="bildirimBtnTikla()" title="Bildirim ayarları" style="background:none;border:none;font-size:20px;cursor:pointer;padding:4px;line-height:1">🔔</button>
+      </div>
     </div>
     <div id="ybölüm" style="display:none">
+      <!-- Bildirim Ayarları - herkes görür -->
+      <div id="bildirim-ayar-kart" style="margin-bottom:14px"></div>
       <div class="bh">👥 Kullanıcı Yönetimi</div>
       <div id="kl2" style="margin-bottom:10px"></div>
       <button class="btn btn-lac" style="padding:10px;font-size:13px;margin-bottom:14px" onclick="mAc('ykm')">+ Yeni Kullanıcı Ekle</button>
@@ -729,6 +747,12 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     </div>
     <!-- Özet kartlar -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px" id="cari-ozet"></div>
+    <!-- Yeni hareket ekle -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+      <button onclick="cariYeniAlim()" style="padding:8px;background:var(--kir-a);color:var(--kir);border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">+ Alım</button>
+      <button onclick="cariYeniOdeme()" style="padding:8px;background:var(--yes-a);color:var(--yes-d);border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">+ Ödeme</button>
+      <button onclick="fisModalAc('borc')" style="padding:8px;background:var(--lac-a);color:var(--lac);border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">+ Fiş</button>
+    </div>
     <!-- Filtre -->
     <div style="display:flex;gap:6px;margin-bottom:10px" id="cari-filtre-btns">
       <button class="fb on" id="cf-tumu" onclick="cariFiltreSec('tumu',this)" style="flex:1;text-align:center">Tümü</button>
@@ -739,6 +763,13 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
     <div id="cari-liste"></div>
     <!-- Başlangıç bakiyesi düzenle -->
     <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0">
+      <div style="font-size:11px;font-weight:700;color:var(--gri);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📋 Fiş İşlemleri</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <button onclick="fisModalAc('borc')" style="padding:10px;background:var(--kir-a);color:var(--kir);border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📤 Borç Fişi</button>
+        <button onclick="fisModalAc('alacak')" style="padding:10px;background:var(--yes-a);color:var(--yes-d);border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">📥 Alacak Fişi</button>
+      </div>
+    </div>
+<div style="margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0">
       <button onclick="cariBakliyeDuz()" style="width:100%;padding:10px;background:var(--lac-a);color:var(--lac);border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:8px">
         ✏️ Başlangıç Bakiyesini Düzenle
       </button>
@@ -1084,7 +1115,7 @@ function raporRender(){
   let g=[],b=[],y=[];
   mst.filter(m=>m.aktif!==false&&m.ziyaretAraligi).forEach(m=>{
     const fark=gf(m.sonZiyaret||'');
-    if(fark===-1){g.push({...m,ka:-9999});return;}
+    if(fark===-1){g.push({...m,ka:null,yeniIsletme:true});return;} // Hiç ziyaret yok
     const ar=efektifAralik(m.ziyaretAraligi, m.sonDoluluk);
     const ka=ar-fark;
     if(ka<0)g.push({...m,ka});else if(ka===0)b.push({...m,ka});else if(ka<=3)y.push({...m,ka});
@@ -1156,7 +1187,7 @@ function zvRender(){
   L.forEach(m=>{
     if(!m.ziyaretAraligi){grp.zaman.push({...m,ka:999});return;}
     const fark=gf(m.sonZiyaret||'');
-    if(fark===-1){grp.acil.push({...m,ka:-9999});return;}
+    if(fark===-1){grp.acil.push({...m,ka:null,yeniIsletme:true});return;}
     const ar=efektifAralik(m.ziyaretAraligi, m.sonDoluluk);
     const ka=ar-fark;
     if(ka<0)grp.acil.push({...m,ka});else if(ka===0)grp.bugun.push({...m,ka});else if(ka<=5)grp.yaklasan.push({...m,ka});else grp.zaman.push({...m,ka});
@@ -1327,7 +1358,8 @@ async function zvKaydet(){
   if(sIslem==='alindi'&&!el('skg').value){dm('Kg miktarını girin!','err');return;}
   const z={id:Date.now(),tarih:bug(),saat:saat(),musteriId:sMst.id,musteriAdi:sMst.isim,il:sMst.il,personel:otr.adSoyad||otr.kullaniciAdi,islem:sIslem==='alindi'?'Alım Yapıldı':'Alım Yapılmadı',kg:sIslem==='alindi'?el('skg').value:'',odemeTuru:sIslem==='alindi'?sOdeme:'',tutar:sIslem==='alindi'?el('stu').value:'',
     birimFiyat:sIslem==='alindi'?(sOdeme==='Nakit'?parseFloat(sMst.nakitFiyat)||0:sOdeme==='Yakıt Kartı'?parseFloat(sMst.yakitFiyat)||0:parseFloat(sMst.faturaliFiyat)||0):0,
-    doluluk:sIslem==='alinmadi'?sDol:'',notlar:el('snot').value};
+    doluluk:sIslem==='alinmadi'?sDol:'',notlar:el('snot').value,
+    odemeDurum:sIslem==='alindi'&&sOdeme==='Faturalı'?'bekliyor':'odendi'};
   if(duzZiyaretId){
     const duzIdx=zvr.findIndex(x=>String(x.id)===String(duzZiyaretId));
     const eskiZ=zvr.find(x=>String(x.id)===String(duzZiyaretId));
@@ -1452,6 +1484,7 @@ function kListele(){
       <div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap">
         <button class="btn-sm" style="background:var(--lac-a);color:var(--lac);flex:2" onclick="${odeme?'odemeDuz':'zDuz'}(${z.id})">✎ Düzenle</button>
         ${al?`<button class="btn-sm" style="background:var(--yes-a);color:var(--yes-d)" onclick="kListeleFis('${z.id}')">🧾 Fiş</button>`:''}
+        ${al?`<button class="btn-sm" style="background:var(--tur-a);color:var(--tur)" onclick="kListeleOdemeEkle('${z.id}')">💳 Ödeme</button>`:''}
         ${odeme?`<button class="btn-sm" style="background:var(--lac-a);color:var(--lac)" onclick="kListeleMakbuz('${z.id}')">💵 Makbuz</button>`:''}
         <button class="btn-sm" style="background:var(--kir-a);color:var(--kir)" onclick="zSil(${z.id})">🗑</button>
       </div>
@@ -1641,7 +1674,8 @@ function mlRender(){
     const f=[m.nakitFiyat?'N:'+m.nakitFiyat+'₺':'',m.yakitFiyat?'Y:'+m.yakitFiyat+'₺':'',m.faturaliFiyat?'F:'+m.faturaliFiyat+'₺':''].filter(Boolean).join(' · ');
     const fark=gf(m.sonZiyaret||'');
     const ar=m.ziyaretAraligi?efektifAralik(m.ziyaretAraligi, m.sonDoluluk):0;
-    const ka=ar?ar-fark:null;
+    // fark===-1: hiç ziyaret yok → yeni işletme olarak göster
+    const ka=fark===-1?null:(ar?ar-fark:null);
     let durum='',dCls='';
     if(ka!==null){if(ka<0){durum=Math.abs(ka)+' gün gecikti';dCls='color:var(--kir)';}else if(ka===0){durum='Bugün';dCls='color:var(--yes-d)';}else if(ka<=5){durum=ka+' gün kaldı';dCls='color:var(--tur)';}else{durum=ka+' gün sonra';dCls='color:var(--gri)';}}
     const pasif=m.aktif===false;
@@ -1652,6 +1686,7 @@ function mlRender(){
           <button class="btn-sm" style="background:var(--lac-a);color:var(--lac)" onclick="mstDuz(${m.id})">✎</button>
           <button class="btn-sm" style="background:var(--card2);color:var(--text2)" onclick="trhGosterId(${m.id})">📋</button>
           <button class="btn-sm" style="background:var(--yes-a);color:var(--yes-d)" onclick="cariAc(${m.id})">💰 Cari</button>
+          <button class="btn-sm" style="background:var(--tur-a);color:var(--tur)" onclick="mlFisAc(${m.id})">📋 Fiş</button>
           <button class="btn-sm" style="background:var(--tur-a);color:var(--tur)" onclick="mlCariDuzAc(${m.id})">✏️ Bakiye</button>
         </div>
       </div>
@@ -1739,6 +1774,7 @@ function raporSure(sure,btn){
   raporSureSec=sure;
   document.querySelectorAll('#p-rapor .fb').forEach(b=>b.classList.remove('on'));
   if(btn)btn.classList.add('on');
+  bekleyenFaturaRender();
   alimOzetRender();
   perPerfRender();
   takipBadgeGuncelle();
@@ -3213,7 +3249,10 @@ function cariRenderIcin(musteriId){
         <div style="text-align:right;flex-shrink:0;margin-left:10px">
           <div style="font-size:16px;font-weight:700;${alim?'color:var(--kir)':'color:var(--yes-d)'}">${alim?'+':'-'}${h.hesapTutar.toFixed(2)}₺</div>
           <div style="font-size:10px;color:${kumRenk};font-weight:600">${h.kumBakiye.toFixed(2)}₺</div>
-          ${!h._baslangic?`<button onclick="cariHareketDuz('${h.id}','${h.tip}',${musteriId})" style="margin-top:3px;background:var(--lac-a);color:var(--lac);border:none;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">✏️</button>`:''}
+          ${!h._baslangic?`<div style="display:flex;gap:4px;margin-top:4px;justify-content:flex-end">
+            <button onclick="cariHareketDuz('${h.id}','${h.tip}',${musteriId})" style="background:var(--lac-a);color:var(--lac);border:none;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">✏️ Düzenle</button>
+            <button onclick="cariHareketSil('${h.id}',${musteriId})" style="background:var(--kir-a);color:var(--kir);border:none;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">🗑</button>
+          </div>`:''}
         </div>
       </div>
     </div>`;
@@ -3640,6 +3679,516 @@ function excelIsle(buffer,div){
     div.innerHTML=r;
     dm('✓ '+guncellened+' işletme güncellendi','ok');
   }catch(err){div.innerHTML='<div style="color:var(--kir);padding:10px;background:var(--kir-a);border-radius:8px">❌ '+err.message+'</div>';}
+}
+
+
+//=== CARİ YENİ HAREKET / SİL ===
+function cariYeniOdeme(){
+  if(!cariAktifId){return;}
+  const m=mst.find(x=>String(x.id)===String(cariAktifId));if(!m)return;
+  el('odeme-musteriId').value=String(m.id);
+  el('odeme-musteriAdi').value=m.isim;
+  el('odeme-musteriIl').value=m.il||'';
+  el('odeme-isletme-bilgi').textContent='🏪 '+m.isim+(m.il?' · '+m.il:'');
+  el('odeme-tutar').value='';
+  el('odeme-aciklama').value='';
+  sMstSon={...m};
+  // Ödeme formu saha'da ama cari modaldan açacağız
+  // Bunun yerine odeme-duz-m modalını override ile kullan
+  const _orig=oduzKaydet;
+  el('odeme-duz-id').value='';
+  el('odeme-duz-isletme').textContent=m.isim+(m.il?' · '+m.il:'');
+  const d=new Date();
+  el('odeme-duz-tarih').textContent=bug();
+  el('odeme-duz-tutar').value='';
+  el('odeme-duz-aciklama').value='';
+  oduzTurSecilen='Nakit';
+  ['oduz-nakit','oduz-yakit','oduz-havale'].forEach(bid=>{const b=el(bid);if(b)b.classList.remove('on');});
+  const nb=el('oduz-nakit');if(nb)nb.classList.add('on');
+  oduzKaydet=function(){
+    const tutar=parseFloat(el('odeme-duz-tutar').value)||0;
+    if(!tutar){dm('Tutar girin!','err');el('odeme-duz-tutar').focus();return;}
+    const yd={id:Date.now(),tarih:bug(),saat:saat(),musteriId:String(m.id),musteriAdi:m.isim,il:m.il||'',personel:otr?.adSoyad||otr?.kullaniciAdi||'',islem:'Ödeme',kg:'',odemeTuru:oduzTurSecilen,tutar:tutar.toString(),doluluk:'',notlar:el('odeme-duz-aciklama').value.trim(),birimFiyat:0};
+    zvr.unshift(yd);localStorage.setItem('z',JSON.stringify(zvr));shG('addZiyaret',yd);
+    mKapat('odeme-duz-m');
+    setTimeout(()=>{cariRenderIcin(cariAktifId);mlRender();},200);
+    dm('✓ Ödeme eklendi — '+tutar.toFixed(2)+'₺','ok');
+    oduzKaydet=_orig;
+  };
+  mAc('odeme-duz-m');
+}
+
+function cariYeniAlim(){
+  if(!cariAktifId){return;}
+  const m=mst.find(x=>String(x.id)===String(cariAktifId));
+  if(!m)return;
+  // Saha'ya yönlendir - işletme seçili olarak
+  mKapat('cari-m');
+  setTimeout(()=>{
+    mstSec(m);
+    nav('saha',document.querySelectorAll('.nb')[2]);
+    dm('Alım bilgilerini girin → Kaydet & Gönder','info');
+  },300);
+}
+
+function cariHareketSil(zId,musteriId){
+  if(!confirm('Bu hareket silinsin mi?'))return;
+  const sv=JSON.parse(localStorage.getItem('silzvr')||'[]');
+  if(!sv.includes(String(zId))){sv.push(String(zId));localStorage.setItem('silzvr',JSON.stringify(sv));}
+  zvr=zvr.filter(x=>String(x.id)!==String(zId));
+  localStorage.setItem('z',JSON.stringify(zvr));
+  shSil('deleteZiyaret',zId);
+  cariRenderIcin(musteriId);
+  mlRender();kListele();
+  dm('✓ Hareket silindi','ok');
+}
+
+//=== KAYITLAR: ÖDEME EKLE ===
+function kListeleOdemeEkle(zId){
+  const z=zvr.find(x=>String(x.id)===String(zId));
+  if(!z){dm('Kayıt bulunamadı','err');return;}
+  const m=mst.find(x=>String(x.id)===String(z.musteriId));
+  if(!m){dm('İşletme bulunamadı','err');return;}
+  const _orig=oduzKaydet;
+  el('odeme-duz-id').value='';
+  el('odeme-duz-isletme').textContent=m.isim+(m.il?' · '+m.il:'');
+  el('odeme-duz-tarih').textContent=z.tarih+' alım kaydına ödeme';
+  el('odeme-duz-tutar').value=z.tutar||'';
+  el('odeme-duz-aciklama').value='';
+  oduzTurSecilen=z.odemeTuru||'Nakit';
+  ['oduz-nakit','oduz-yakit','oduz-havale'].forEach(bid=>{const b=el(bid);if(b)b.classList.remove('on');});
+  const turMap={'Nakit':'oduz-nakit','Yakıt Kartı':'oduz-yakit','Havale':'oduz-havale'};
+  const aktif=el(turMap[oduzTurSecilen]);if(aktif)aktif.classList.add('on');
+  oduzKaydet=function(){
+    const tutar=parseFloat(el('odeme-duz-tutar').value)||0;
+    if(!tutar){dm('Tutar girin!','err');el('odeme-duz-tutar').focus();return;}
+    const yd={id:Date.now(),tarih:z.tarih,saat:z.saat||saat(),musteriId:String(m.id),musteriAdi:m.isim,il:m.il||'',personel:otr?.adSoyad||otr?.kullaniciAdi||'',islem:'Ödeme',kg:'',odemeTuru:oduzTurSecilen,tutar:tutar.toString(),doluluk:'',notlar:el('odeme-duz-aciklama').value.trim(),birimFiyat:0};
+    zvr.unshift(yd);localStorage.setItem('z',JSON.stringify(zvr));shG('addZiyaret',yd);
+    mKapat('odeme-duz-m');kListele();
+    dm('✓ Ödeme eklendi — '+m.isim+' — '+tutar.toFixed(2)+'₺','ok');
+    oduzKaydet=_orig;
+  };
+  mAc('odeme-duz-m');
+}
+
+
+//=== BEKLEYEN FATURA ÖDEMELERİ ===
+function bekleyenFaturaRender(){
+  const kart=el('bekleyen-fatura-kart');
+  const liste=el('bekleyen-fatura-liste');
+  const ozet=el('bekleyen-fatura-ozet');
+  const sayi=el('bekleyen-fatura-sayi');
+  if(!kart||!liste)return;
+
+  // Faturalı alımlar + ödeme yapılmamışlar
+  // Ödeme yapılmış = aynı musteriId için aynı tarihe yakın bir 'Ödeme' kaydı var
+  // ya da odemeDurum='bekliyor'
+  const faturaliAlimlar=zvr.filter(z=>
+    z.islem==='Alım Yapıldı' &&
+    z.odemeTuru==='Faturalı' &&
+    z.odemeDurum!=='odendi'
+  );
+
+  // Ödeme yapılmışları çıkar - aynı musteriId + tarihe yakın ödeme var mı?
+  const bekleyenler=faturaliAlimlar.filter(z=>{
+    // Bu alım için ödeme kaydı var mı?
+    const odemeVar=zvr.some(o=>
+      o.islem==='Ödeme' &&
+      String(o.musteriId)===String(z.musteriId) &&
+      o.notlar&&o.notlar.includes(String(z.id))
+    );
+    return !odemeVar;
+  });
+
+  if(!bekleyenler.length){kart.style.display='none';return;}
+  kart.style.display='block';
+  if(sayi)sayi.textContent=bekleyenler.length+' alım';
+
+  // Toplam tutar hesapla
+  let topBekleyen=0;
+  bekleyenler.forEach(z=>{
+    const kg=parseFloat(z.kg)||0;
+    const bf=parseFloat(z.birimFiyat)||0;
+    const tutar=parseFloat(z.tutar)||(bf>0&&kg>0?kg*(bf/1.20):0);
+    topBekleyen+=tutar;
+  });
+
+  // İl bazlı grupla
+  const ilGruplari={};
+  bekleyenler.forEach(z=>{
+    const il=z.il||'Diğer';
+    if(!ilGruplari[il])ilGruplari[il]=[];
+    ilGruplari[il].push(z);
+  });
+
+  if(ozet){
+    const ilSayisi=Object.keys(ilGruplari).length;
+    const ilText=Object.entries(ilGruplari).map(([il,arr])=>il+' ('+arr.length+')').join(', ');
+    ozet.innerHTML=`
+      <div style="background:var(--kir-a);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:var(--gri);margin-bottom:3px">Toplam Bekleyen</div>
+        <div style="font-size:20px;font-weight:800;color:var(--kir)">${topBekleyen.toFixed(0)}₺</div>
+      </div>
+      <div style="background:var(--tur-a);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:var(--gri);margin-bottom:3px">İller</div>
+        <div style="font-size:11px;font-weight:700;color:var(--tur)">${ilText}</div>
+      </div>`;
+  }
+
+  // İl bazlı liste
+  let h='';
+  // Tarihe göre sırala (eski olan önce)
+  const sirali=[...bekleyenler].sort((a,b)=>{
+    const ta=a.tarih.includes('T')?new Date(a.tarih):new Date(a.tarih.split('.').reverse().join('-'));
+    const tb=b.tarih.includes('T')?new Date(b.tarih):new Date(b.tarih.split('.').reverse().join('-'));
+    return ta-tb;
+  });
+
+  sirali.forEach(z=>{
+    const tarih=z.tarih.includes('T')?ft2(z.tarih):z.tarih;
+    const kg=parseFloat(z.kg)||0;
+    const bf=parseFloat(z.birimFiyat)||0;
+    const tutar=parseFloat(z.tutar)||(bf>0&&kg>0?kg*(bf/1.20):0);
+    const gecenGun=gf(z.tarih);
+    const gecenRenk=gecenGun>30?'var(--kir)':gecenGun>14?'var(--tur)':'var(--gri)';
+    h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 10px;background:var(--card);border-radius:8px;margin-bottom:5px;border-left:3px solid var(--kir)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;margin-bottom:2px">${z.musteriAdi}</div>
+        <div style="font-size:11px;color:var(--gri)">${tarih} · ${kg} kg${bf>0?' · '+(bf/1.20).toFixed(2)+'₺/kg':''}</div>
+        <div style="font-size:11px;font-weight:600;color:${gecenRenk}">⏱ ${gecenGun>0?gecenGun+' gün önce':'Bugün'}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;margin-left:10px">
+        <div style="font-size:16px;font-weight:800;color:var(--kir)">${tutar.toFixed(0)}₺</div>
+        <button onclick="faturaOdemeKaydet('${z.id}')" style="margin-top:4px;background:var(--yes);color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">✓ Ödendi</button>
+      </div>
+    </div>`;
+  });
+  liste.innerHTML=h||'<div class="bos">Bekleyen yok</div>';
+}
+
+function faturaOdemeKaydet(zId){
+  const z=zvr.find(x=>String(x.id)===String(zId));
+  if(!z){dm('Kayıt bulunamadı','err');return;}
+  const m=mst.find(x=>String(x.id)===String(z.musteriId));
+  if(!m){dm('İşletme bulunamadı','err');return;}
+  const kg=parseFloat(z.kg)||0;
+  const bf=parseFloat(z.birimFiyat)||0;
+  const tutar=parseFloat(z.tutar)||(bf>0&&kg>0?kg*(bf/1.20):0);
+  if(!confirm(m.isim+' — '+tutar.toFixed(2)+'₺ fatura ödemesi yapıldı olarak işaretlensin mi?'))return;
+  // Ödeme kaydı oluştur
+  const yd={
+    id:Date.now(),tarih:bug(),saat:saat(),
+    musteriId:String(m.id),musteriAdi:m.isim,il:m.il||'',
+    personel:otr?.adSoyad||otr?.kullaniciAdi||'',
+    islem:'Ödeme',kg:'',odemeTuru:'Faturalı',
+    tutar:tutar.toString(),doluluk:'',
+    notlar:'Fatura ödemesi — alım:'+zId,birimFiyat:0
+  };
+  // Eski alımı ödendi olarak işaretle
+  const alimIdx=zvr.findIndex(x=>String(x.id)===String(zId));
+  if(alimIdx>=0){zvr[alimIdx].odemeDurum='odendi';shSil('deleteZiyaret',zId);setTimeout(()=>shG('addZiyaret',zvr[alimIdx]),500);}
+  zvr.unshift(yd);
+  localStorage.setItem('z',JSON.stringify(zvr));
+  shG('addZiyaret',yd);
+  bekleyenFaturaRender();
+  mlRender();
+  dm('✓ Fatura ödemesi kaydedildi — '+m.isim+' — '+tutar.toFixed(2)+'₺','ok');
+}
+
+
+//=== PUSH BİLDİRİM SİSTEMİ ===
+let _swRegistration = null;
+const _LOGO_B64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPE...'; // logo için kısaltma
+
+async function bildirimleriBaslat() {
+  if (!('Notification' in window)) {
+    console.log('Bu tarayıcı bildirimleri desteklemiyor');
+    return false;
+  }
+  
+  // İzin iste
+  let izin = Notification.permission;
+  if (izin === 'default') {
+    izin = await Notification.requestPermission();
+  }
+  if (izin !== 'granted') {
+    console.log('Bildirim izni reddedildi');
+    return false;
+  }
+
+  // Service Worker kaydet (blob URL ile)
+  if ('serviceWorker' in navigator) {
+    try {
+      const swCode = `// Ekosa CRM Service Worker
+const CACHE = 'ekosa-v1';
+
+self.addEventListener('install', e => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(clients.claim());
+});
+
+self.addEventListener('push', e => {
+  const data = e.data ? e.data.json() : {};
+  const title = data.title || 'Ekosa CRM';
+  const options = {
+    body: data.body || 'Günlük özet hazır',
+    icon: data.icon || '',
+    badge: data.badge || '',
+    tag: data.tag || 'ekosa-daily',
+    renotify: true,
+    data: { url: data.url || '/' }
+  };
+  e.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(
+    clients.matchAll({type:'window'}).then(cs => {
+      if(cs.length > 0) { cs[0].focus(); return; }
+      clients.openWindow(e.notification.data.url || '/');
+    })
+  );
+});`;
+      const swBlob = new Blob([swCode], {type: 'application/javascript'});
+      const swUrl = URL.createObjectURL(swBlob);
+      _swRegistration = await navigator.serviceWorker.register(swUrl, {scope: './'});
+      console.log('[SW] Kayıt OK');
+    } catch(e) {
+      console.log('[SW] Kayıt hatası:', e.message);
+    }
+  }
+  
+  localStorage.setItem('bildirimIzni', 'granted');
+  return true;
+}
+
+function gunlukOzetHesapla() {
+  const bugun = bug();
+  const bugunKayitlar = zvr.filter(z => {
+    const zt = z.tarih && z.tarih.includes('T') ? ft2(z.tarih) : z.tarih;
+    return zt === bugun;
+  });
+  
+  const alimlar = bugunKayitlar.filter(z => z.islem === 'Alım Yapıldı');
+  const alinmadi = bugunKayitlar.filter(z => z.islem === 'Alım Yapılmadı');
+  const odemeler = bugunKayitlar.filter(z => z.islem === 'Ödeme');
+  
+  const topKg = alimlar.reduce((s, z) => s + (parseFloat(z.kg) || 0), 0);
+  const topTutar = alimlar.reduce((s, z) => {
+    const kg = parseFloat(z.kg) || 0;
+    const bf = parseFloat(z.birimFiyat) || 0;
+    return s + (bf > 0 && kg > 0 ? kg * bf : parseFloat(z.tutar) || 0);
+  }, 0);
+  const topOdeme = odemeler.reduce((s, z) => s + (parseFloat(z.tutar) || 0), 0);
+  
+  // Geciken ziyaretler
+  const geciken = mst.filter(m => {
+    if (m.aktif === false) return false;
+    const fark = gf(m.sonZiyaret || '');
+    if (fark < 0) return false;
+    const ar = m.ziyaretAraligi ? efektifAralik(m.ziyaretAraligi, m.sonDoluluk) : 0;
+    return ar > 0 && fark > ar;
+  }).length;
+  
+  // Bekleyen fatura
+  const bekleyenFatura = zvr.filter(z =>
+    z.islem === 'Alım Yapıldı' && z.odemeTuru === 'Faturalı' && z.odemeDurum !== 'odendi'
+  ).length;
+  
+  return { alimlar: alimlar.length, alinmadi: alinmadi.length, topKg, topTutar, topOdeme, geciken, bekleyenFatura, bugun };
+}
+
+function gunlukOzetBildir() {
+  if (Notification.permission !== 'granted') return;
+  
+  const ozet = gunlukOzetHesapla();
+  
+  // Bugün bildirim gönderildi mi?
+  const sonBildirim = localStorage.getItem('sonBildirimTarih');
+  const sonSaat = localStorage.getItem('sonBildirimSaat');
+  const simdi = new Date();
+  const simdSaat = simdi.getHours() * 60 + simdi.getMinutes();
+  
+  // Öğleden sonra 17:00-20:00 arası gönder
+  if (sonBildirim === ozet.bugun) return; // Bugün zaten gönderildi
+  if (simdSaat < 17 * 60 || simdSaat > 20 * 60) return; // Saat uygun değil
+  
+  // Bildirim başlığı ve içeriği
+  let baslik = 'Ekosa CRM — Günlük Özet';
+  let metin = '';
+  
+  if (ozet.alimlar > 0) {
+    metin += `✅ ${ozet.alimlar} alım · ${ozet.topKg.toFixed(0)} kg`;
+    if (ozet.topTutar > 0) metin += ` · ${ozet.topTutar.toFixed(0)}₺`;
+    metin += '\n';
+  } else {
+    metin += '📋 Bugün alım kaydı yok\n';
+  }
+  
+  if (ozet.alinmadi > 0) metin += `❌ ${ozet.alinmadi} işletme alım yapılmadı\n`;
+  if (ozet.geciken > 0) metin += `⏰ ${ozet.geciken} gecikmiş ziyaret\n`;
+  if (ozet.bekleyenFatura > 0) metin += `🧾 ${ozet.bekleyenFatura} bekleyen fatura ödemesi`;
+  
+  if (!metin.trim()) metin = 'Bugün kayıt bulunmuyor';
+  
+  try {
+    new Notification(baslik, {
+      body: metin.trim(),
+      icon: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eH...',
+      tag: 'ekosa-daily-' + ozet.bugun,
+      renotify: false
+    });
+    localStorage.setItem('sonBildirimTarih', ozet.bugun);
+    console.log('[BİLDİRİM] Günlük özet gönderildi');
+  } catch(e) {
+    console.log('[BİLDİRİM] Hata:', e.message);
+  }
+}
+
+function bildirimAyarGoster() {
+  const izin = Notification.permission;
+  const kart = el('bildirim-ayar-kart');
+  if (!kart) return;
+  
+  if (izin === 'granted') {
+    kart.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--yes-a);border-radius:10px;border:1px solid var(--yes)">
+      <span style="font-size:20px">🔔</span>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:var(--yes-d)">Bildirimler Aktif</div>
+        <div style="font-size:11px;color:var(--gri)">Her gün 17:00-20:00 arası günlük özet gelir</div>
+      </div>
+      <button onclick="bildirimTest()" style="background:var(--yes);color:#fff;border:none;padding:7px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Test</button>
+    </div>`;
+  } else if (izin === 'denied') {
+    kart.innerHTML = `<div style="padding:12px;background:var(--kir-a);border-radius:10px">
+      <div style="font-size:13px;font-weight:700;color:var(--kir)">🔕 Bildirimler Engellendi</div>
+      <div style="font-size:11px;color:var(--gri);margin-top:4px">Tarayıcı ayarlarından bu site için bildirimlere izin verin</div>
+    </div>`;
+  } else {
+    kart.innerHTML = `<div style="padding:12px;background:var(--lac-a);border-radius:10px">
+      <div style="font-size:13px;font-weight:700;color:var(--lac);margin-bottom:8px">🔔 Günlük Özet Bildirimi</div>
+      <div style="font-size:12px;color:var(--gri);margin-bottom:10px">Her gün akşam 17:00-20:00 arası gün özeti telefonunuza gelir</div>
+      <button onclick="bildirimleriBaslat().then(bildirimAyarGoster)" style="width:100%;padding:10px;background:var(--lac);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🔔 Bildirimleri Aç</button>
+    </div>`;
+  }
+}
+
+function bildirimTest() {
+  const ozet = gunlukOzetHesapla();
+  let metin = `Bugün: ${ozet.alimlar} alım · ${ozet.topKg.toFixed(0)} kg · ${ozet.topTutar.toFixed(0)}₺`;
+  if (ozet.geciken > 0) metin += `\n⏰ ${ozet.geciken} gecikmiş ziyaret`;
+  if (ozet.bekleyenFatura > 0) metin += `\n🧾 ${ozet.bekleyenFatura} bekleyen fatura`;
+  
+  try {
+    new Notification('Ekosa CRM — Test Bildirimi', {
+      body: metin,
+      tag: 'ekosa-test-' + Date.now(),
+      renotify: true
+    });
+    dm('✓ Test bildirimi gönderildi', 'ok');
+  } catch(e) {
+    dm('Bildirim gönderilemedi: ' + e.message, 'err');
+  }
+}
+
+// Otomatik kontrol — her 5 dakikada bir saat kontrolü
+let _bildirimTimer = null;
+function bildirimTimerBaslat() {
+  if (_bildirimTimer) clearInterval(_bildirimTimer);
+  _bildirimTimer = setInterval(() => {
+    if (Notification.permission === 'granted') {
+      gunlukOzetBildir();
+    }
+  }, 5 * 60 * 1000); // 5 dakika
+  // İlk çalıştırma
+  setTimeout(() => {
+    if (Notification.permission === 'granted') gunlukOzetBildir();
+  }, 3000);
+}
+
+
+function bildirimBtnTikla(){
+  // Bildirim durumu modalı - basit DM panel
+  const izin = Notification.permission;
+  if (izin === 'granted') {
+    // Anlık özet göster + test seçeneği
+    const ozet = gunlukOzetHesapla();
+    let mesaj = `📊 Bugün (${ozet.bugun}):\n`;
+    mesaj += `✅ ${ozet.alimlar} alım · ${ozet.topKg.toFixed(0)} kg · ${ozet.topTutar.toFixed(0)}₺\n`;
+    if (ozet.alinmadi > 0) mesaj += `❌ ${ozet.alinmadi} alım yapılmadı\n`;
+    if (ozet.geciken > 0) mesaj += `⏰ ${ozet.geciken} gecikmiş ziyaret\n`;
+    if (ozet.bekleyenFatura > 0) mesaj += `🧾 ${ozet.bekleyenFatura} bekleyen fatura`;
+    
+    // Bildirim gönder + DM göster
+    try {
+      new Notification('Ekosa CRM — Anlık Özet', {
+        body: mesaj.trim(),
+        tag: 'ekosa-anlik-' + Date.now(),
+        renotify: true
+      });
+    } catch(e) {}
+    dm('🔔 ' + mesaj.split('\n').join(' | '), 'ok');
+  } else if (izin === 'denied') {
+    dm('🔕 Bildirimler engellenmiş. Tarayıcı ayarlarından bu site için bildirimlere izin verin.', 'err');
+  } else {
+    // İzin iste
+    bildirimleriBaslat().then(ok => {
+      if (ok) {
+        dm('✓ Bildirimler aktif! Her gün 17:00-20:00 arası özet gelecek.', 'ok');
+        const btn = el('bildirim-btn');
+        if (btn) btn.style.opacity = '1';
+        bildirimAyarGoster();
+      } else {
+        dm('Bildirim izni verilmedi.', 'err');
+      }
+    });
+  }
+}
+
+
+//=== YAKIT KARTI ===
+function yakitKartKopyalaAc(){
+  // Önce sMst'den, yoksa input'tan kart no al
+  const kartNo = (sMst && sMst.yakitKartNo) 
+    ? sMst.yakitKartNo 
+    : (el('saha-kart-no-goster') ? el('saha-kart-no-goster').value : '');
+  
+  if(!kartNo || kartNo==='Kart no...'){
+    dm('Yakıt kart numarası girilmemiş! İşletme kartına girin.','err');
+    return;
+  }
+  
+  // Kopyala
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(kartNo).then(()=>{
+      dm('✓ Kart no kopyalandı: '+kartNo+' — Shell açılıyor...','ok');
+    }).catch(()=>{
+      _kartKopyalaFallback(kartNo);
+    });
+  } else {
+    _kartKopyalaFallback(kartNo);
+  }
+  
+  // Shell sayfasını aç (0.5sn sonra - kopyalama tamamlansın)
+  setTimeout(()=>{
+    window.open('https://sfs.turkiyeshell.com/pratikkart/kart-limit-durum-guncelleme','_blank');
+  }, 500);
+}
+
+function _kartKopyalaFallback(kartNo){
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=kartNo;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.focus();ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+    dm('✓ Kart no kopyalandı: '+kartNo+' — Shell açılıyor...','ok');
+  }catch(e){
+    dm('Kart no: '+kartNo+' (Shell açılıyor...)','ok');
+  }
 }
 
 function bhKopyala(){
@@ -4263,6 +4812,17 @@ if(otr){
   setTimeout(()=>{alimOzetRender();perPerfRender();setTimeout(haftalikGrafikCiz,300);takipBadgeGuncelle();teklifHuniRender();yeniMusteriRender();takipGeldiRender();sozlesmeUyariRender();},500);
   sync(false);stimer=setInterval(()=>sync(false),30000);
   window.addEventListener('online',()=>{dm('✓ İnternet bağlandı','ok');sync(false);});
+  // Bildirim sistemi başlat
+  setTimeout(bildirimTimerBaslat, 2000);
+  setTimeout(bildirimAyarGoster, 1000);
+  // Bildirim butonunu güncelle
+  setTimeout(()=>{
+    const bBtn=el('bildirim-btn');
+    if(bBtn){
+      if(Notification.permission==='granted'){bBtn.style.opacity='1';}
+      else{bBtn.style.opacity='0.4';bBtn.title='Bildirimleri etkinleştirmek için tıklayın';}
+    }
+  }, 500);
 }
 </script>
 </body>
