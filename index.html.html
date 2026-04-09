@@ -1044,7 +1044,18 @@ async function sync(manuel){
       zvr=[...d.ziyaretler,...yeniLok];
       localStorage.setItem('z',JSON.stringify(zvr));
     }
-    if(d.ayarlar&&d.ayarlar.iller&&d.ayarlar.iller.length){ill=d.ayarlar.iller;localStorage.setItem('i',JSON.stringify(ill));}
+    if(d.ayarlar&&d.ayarlar.iller&&d.ayarlar.iller.length){
+      // Server + local ill listelerini birleştir - hiçbiri kaybolmasın
+      const serverIll=d.ayarlar.iller;
+      const localIll=JSON.parse(localStorage.getItem('i')||'[]');
+      const birlesik=[...new Set([...serverIll,...localIll])].sort();
+      ill=birlesik;
+      localStorage.setItem('i',JSON.stringify(ill));
+      // Eğer local'de server'da olmayan il varsa server'a gönder
+      if(localIll.some(il=>!serverIll.includes(il))){
+        setTimeout(()=>shG('updateSettings',{action:'updateSettings',iller:ill}),1000);
+      }
+    }
     if(d.kullanicilar){kul=d.kullanicilar;localStorage.setItem('k',JSON.stringify(kul));}
     el('sd').className='sync-dot';
     ddDoldur();raporRender();zvRender();tListele();kListele();
@@ -2434,6 +2445,36 @@ function smkbIndir(t,no){
   a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));
   a.download='makbuz_'+no+'.txt';a.click();
   mKapat('saha-mkb-m');dm('✓ Makbuz indirildi!','ok');
+}
+
+//=== BİLDİRİM YARDIMCI ===
+async function bildirimGoster(baslik, secenekler){
+  if(Notification.permission !== 'granted') return;
+  try{
+    // Android için SW.showNotification zorunlu
+    if('serviceWorker' in navigator){
+      const reg = await navigator.serviceWorker.getRegistration();
+      if(reg){
+        await reg.showNotification(baslik, secenekler);
+        return;
+      }
+      // SW yoksa kaydet ve dene
+      const swKod = `self.addEventListener('notificationclick',e=>{e.notification.close();e.waitUntil(clients.openWindow('/'));});`;
+      const swBlob = new Blob([swKod],{type:'application/javascript'});
+      const swUrl = URL.createObjectURL(swBlob);
+      try{
+        const newReg = await navigator.serviceWorker.register(swUrl,{scope:'./'});
+        await navigator.serviceWorker.ready;
+        await newReg.showNotification(baslik, secenekler);
+        return;
+      }catch(e2){ /* SW başaramadı, direkt dene */ }
+    }
+    // Masaüstü/iOS - direkt Notification
+    new Notification(baslik, secenekler);
+  }catch(e){
+    console.warn('[BİLDİRİM]', e.message);
+    dm('Bildirim gönderilemedi: '+e.message,'err');
+  }
 }
 
 //=== YAKIT KARTI ===
@@ -4036,9 +4077,8 @@ function gunlukOzetBildir() {
   if (!metin.trim()) metin = 'Bugün kayıt bulunmuyor';
   
   try {
-    new Notification(baslik, {
+    bildirimGoster(baslik, {
       body: metin.trim(),
-      icon: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eH...',
       tag: 'ekosa-daily-' + ozet.bugun,
       renotify: false
     });
@@ -4084,7 +4124,7 @@ function bildirimTest() {
   if (ozet.bekleyenFatura > 0) metin += `\n🧾 ${ozet.bekleyenFatura} bekleyen fatura`;
   
   try {
-    new Notification('Ekosa CRM — Test Bildirimi', {
+    bildirimGoster('Ekosa CRM — Test Bildirimi', {
       body: metin,
       tag: 'ekosa-test-' + Date.now(),
       renotify: true
@@ -4124,13 +4164,11 @@ function bildirimBtnTikla(){
     if (ozet.bekleyenFatura > 0) mesaj += `🧾 ${ozet.bekleyenFatura} bekleyen fatura`;
     
     // Bildirim gönder + DM göster
-    try {
-      new Notification('Ekosa CRM — Anlık Özet', {
-        body: mesaj.trim(),
-        tag: 'ekosa-anlik-' + Date.now(),
-        renotify: true
-      });
-    } catch(e) {}
+    bildirimGoster('Ekosa CRM — Anlık Özet', {
+      body: mesaj.trim(),
+      tag: 'ekosa-anlik-' + Date.now(),
+      renotify: true
+    });
     dm('🔔 ' + mesaj.split('\n').join(' | '), 'ok');
   } else if (izin === 'denied') {
     dm('🔕 Bildirimler engellenmiş. Tarayıcı ayarlarından bu site için bildirimlere izin verin.', 'err');
@@ -4149,6 +4187,36 @@ function bildirimBtnTikla(){
   }
 }
 
+
+//=== BİLDİRİM YARDIMCI ===
+async function bildirimGoster(baslik, secenekler){
+  if(Notification.permission !== 'granted') return;
+  try{
+    // Android için SW.showNotification zorunlu
+    if('serviceWorker' in navigator){
+      const reg = await navigator.serviceWorker.getRegistration();
+      if(reg){
+        await reg.showNotification(baslik, secenekler);
+        return;
+      }
+      // SW yoksa kaydet ve dene
+      const swKod = `self.addEventListener('notificationclick',e=>{e.notification.close();e.waitUntil(clients.openWindow('/'));});`;
+      const swBlob = new Blob([swKod],{type:'application/javascript'});
+      const swUrl = URL.createObjectURL(swBlob);
+      try{
+        const newReg = await navigator.serviceWorker.register(swUrl,{scope:'./'});
+        await navigator.serviceWorker.ready;
+        await newReg.showNotification(baslik, secenekler);
+        return;
+      }catch(e2){ /* SW başaramadı, direkt dene */ }
+    }
+    // Masaüstü/iOS - direkt Notification
+    new Notification(baslik, secenekler);
+  }catch(e){
+    console.warn('[BİLDİRİM]', e.message);
+    dm('Bildirim gönderilemedi: '+e.message,'err');
+  }
+}
 
 //=== YAKIT KARTI ===
 function yakitKartKopyalaAc(){
