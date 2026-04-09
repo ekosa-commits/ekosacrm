@@ -404,6 +404,16 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
   <!-- ADIM 2: İşlem (işletme seçilince görünür) -->
   <div class="card" id="saha-adim2" style="display:none">
     <div class="ct">📋 Adım 2 — Yapılan İşlem</div>
+    <div class="fg2" style="margin-bottom:12px">
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--gri);display:block;margin-bottom:4px">📅 Kayıt Tarihi</label>
+        <input type="date" id="saha-tarih" style="padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;width:100%;color:var(--text)">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--gri);display:block;margin-bottom:4px">⏰ Saat</label>
+        <input type="time" id="saha-saat" style="padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;width:100%;color:var(--text)">
+      </div>
+    </div>
     <div class="islem-sec">
       <button class="ib on" id="ial" onclick="islemSec('alindi',this)">✅ Alım Yapıldı</button>
       <button class="ib kir" id="iyal" onclick="islemSec('alinmadi',this)">❌ Alım Yapılmadı</button>
@@ -1091,7 +1101,7 @@ function renderIlTabs(){
   ill.forEach(il=>{
     let ac=0,bu=0;
     mst.filter(m=>m.il===il&&m.aktif!==false&&m.ziyaretAraligi).forEach(m=>{
-      const k=parseInt(m.ziyaretAraligi)-gf(m.sonZiyaret||'');
+      const k=parseInt(m.ziyaretAraligi)-gf(sonZiyaretBazTarih(m));
       if(k<0)ac++;else if(k===0)bu++;
     });
     const ir2=ilRenk(il);
@@ -1125,8 +1135,8 @@ function renderIller(){
 function raporRender(){
   let g=[],b=[],y=[];
   mst.filter(m=>m.aktif!==false&&m.ziyaretAraligi).forEach(m=>{
-    const fark=gf(m.sonZiyaret||'');
-    if(fark===-1){g.push({...m,ka:null,yeniIsletme:true});return;} // Hiç ziyaret yok
+    const fark=gf(sonZiyaretBazTarih(m));
+
     const ar=efektifAralik(m.ziyaretAraligi, m.sonDoluluk);
     const ka=ar-fark;
     if(ka<0)g.push({...m,ka});else if(ka===0)b.push({...m,ka});else if(ka<=3)y.push({...m,ka});
@@ -1197,8 +1207,8 @@ function zvRender(){
   const grp={acil:[],bugun:[],yaklasan:[],zaman:[]};
   L.forEach(m=>{
     if(!m.ziyaretAraligi){grp.zaman.push({...m,ka:999});return;}
-    const fark=gf(m.sonZiyaret||'');
-    if(fark===-1){grp.acil.push({...m,ka:null,yeniIsletme:true});return;}
+    const fark=gf(sonZiyaretBazTarih(m));
+
     const ar=efektifAralik(m.ziyaretAraligi, m.sonDoluluk);
     const ka=ar-fark;
     if(ka<0)grp.acil.push({...m,ka});else if(ka===0)grp.bugun.push({...m,ka});else if(ka<=5)grp.yaklasan.push({...m,ka});else grp.zaman.push({...m,ka});
@@ -1310,6 +1320,17 @@ function mstSec(m){
   }
   // Adım 2 ve 3'ü göster
   const a2=el('saha-adim2');if(a2)a2.style.display='block';
+  // Tarih/saat alanlarını bugünle doldur (boşsa)
+  const sahaTarih=el('saha-tarih');
+  if(sahaTarih&&!sahaTarih.value){
+    const d=new Date();
+    sahaTarih.value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  const sahaSaat=el('saha-saat');
+  if(sahaSaat&&!sahaSaat.value){
+    const d=new Date();
+    sahaSaat.value=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }
   const a3=el('saha-adim3');if(a3)a3.style.display='block';
   el('saha-islemler').style.display='none';
   // Cari bakiye göster
@@ -1367,7 +1388,16 @@ async function zvKaydet(){
   if(!sMst){dm('Önce işletme seçin!','err');return;}
   if(!otr){dm('Giriş yapın!','err');return;}
   if(sIslem==='alindi'&&!el('skg').value){dm('Kg miktarını girin!','err');return;}
-  const z={id:Date.now(),tarih:bug(),saat:saat(),musteriId:sMst.id,musteriAdi:sMst.isim,il:sMst.il,personel:otr.adSoyad||otr.kullaniciAdi,islem:sIslem==='alindi'?'Alım Yapıldı':'Alım Yapılmadı',kg:sIslem==='alindi'?el('skg').value:'',odemeTuru:sIslem==='alindi'?sOdeme:'',tutar:sIslem==='alindi'?el('stu').value:'',
+  // Tarih/saat inputtan al, yoksa bugün/şimdi
+  const _sahaTarihEl=el('saha-tarih');
+  const _sahaSaatEl=el('saha-saat');
+  let _kayitTarih=bug(),_kayitSaat=saat();
+  if(_sahaTarihEl&&_sahaTarihEl.value){
+    const[y,m,g]=_sahaTarihEl.value.split('-');
+    _kayitTarih=g+'.'+m+'.'+y;
+  }
+  if(_sahaSaatEl&&_sahaSaatEl.value) _kayitSaat=_sahaSaatEl.value;
+  const z={id:Date.now(),tarih:_kayitTarih,saat:_kayitSaat,musteriId:sMst.id,musteriAdi:sMst.isim,il:sMst.il,personel:otr.adSoyad||otr.kullaniciAdi,islem:sIslem==='alindi'?'Alım Yapıldı':'Alım Yapılmadı',kg:sIslem==='alindi'?el('skg').value:'',odemeTuru:sIslem==='alindi'?sOdeme:'',tutar:sIslem==='alindi'?el('stu').value:'',
     birimFiyat:sIslem==='alindi'?(sOdeme==='Nakit'?parseFloat(sMst.nakitFiyat)||0:sOdeme==='Yakıt Kartı'?parseFloat(sMst.yakitFiyat)||0:parseFloat(sMst.faturaliFiyat)||0):0,
     doluluk:sIslem==='alinmadi'?sDol:'',notlar:el('snot').value,
     odemeDurum:sIslem==='alindi'&&sOdeme==='Faturalı'?'bekliyor':'odendi'};
@@ -1577,6 +1607,16 @@ function zDuz(id){
   if(kaydetBtn){kaydetBtn.textContent='✏️ Güncelle';kaydetBtn.style.background='var(--tur)';}
   const iptalBtn=el('zv-iptal-btn');if(iptalBtn)iptalBtn.style.display='block';
   // Saha'ya geç ve scroll to top
+  // Düzenleme modunda orijinal tarihi göster
+  const _duzTEl=el('saha-tarih');
+  if(_duzTEl&&z.tarih){
+    if(z.tarih.includes('.')){
+      const[g,m,y]=z.tarih.split('.');
+      _duzTEl.value=y+'-'+m.padStart(2,'0')+'-'+g.padStart(2,'0');
+    } else _duzTEl.value=z.tarih;
+  }
+  const _duzSEl=el('saha-saat');
+  if(_duzSEl&&z.saat) _duzSEl.value=saatStr2(z.saat);
   nav('saha',document.querySelectorAll('.nb')[2]);
   setTimeout(()=>window.scrollTo({top:0,behavior:'smooth'}),100);
   dm("Düzenleme modu — Güncelle veya ✕ ile iptal","info");
@@ -1683,9 +1723,8 @@ function mlRender(){
   if(!L.length){c.innerHTML='<div class="bos">Sonuç bulunamadı</div>';return;}
   c.innerHTML=L.map(m=>{
     const f=[m.nakitFiyat?'N:'+m.nakitFiyat+'₺':'',m.yakitFiyat?'Y:'+m.yakitFiyat+'₺':'',m.faturaliFiyat?'F:'+m.faturaliFiyat+'₺':''].filter(Boolean).join(' · ');
-    const fark=gf(m.sonZiyaret||'');
+    const fark=gf(sonZiyaretBazTarih(m));
     const ar=m.ziyaretAraligi?efektifAralik(m.ziyaretAraligi, m.sonDoluluk):0;
-    // fark===-1: hiç ziyaret yok → yeni işletme olarak göster
     const ka=fark===-1?null:(ar?ar-fark:null);
     let durum='',dCls='';
     if(ka!==null){if(ka<0){durum=Math.abs(ka)+' gün gecikti';dCls='color:var(--kir)';}else if(ka===0){durum='Bugün';dCls='color:var(--yes-d)';}else if(ka<=5){durum=ka+' gün kaldı';dCls='color:var(--tur)';}else{durum=ka+' gün sonra';dCls='color:var(--gri)';}}
@@ -3165,6 +3204,11 @@ function sahaTemizle(){
   const kb=el('zv-kaydet-btn');
   if(kb){kb.textContent='📍 Kaydet & Gönder';kb.style.background='';}
   const ib=el('zv-iptal-btn');if(ib)ib.style.display='none';
+  // Tarih bugüne, saat şimdiye
+  const _tEl=el('saha-tarih');
+  if(_tEl){const d=new Date();_tEl.value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  const _sEl=el('saha-saat');
+  if(_sEl){const d=new Date();_sEl.value=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
   // Sayfanın üstüne scroll
   window.scrollTo({top:0,behavior:'smooth'});
   el('sa').focus();
@@ -4257,6 +4301,22 @@ function _kartKopyalaFallback(kartNo){
   }catch(e){
     dm('Kart no: '+kartNo+' (Shell açılıyor...)','ok');
   }
+}
+
+
+//=== ZIYARET BAZI TARİH ===
+// Hiç ziyaret yok → işletme id'si (timestamp) varsa onu kullan
+function sonZiyaretBazTarih(m){
+  if(m.sonZiyaret) return m.sonZiyaret;
+  // id timestamp (13 haneli ms) ise eklenme tarihi
+  const mid=parseInt(m.id);
+  if(!isNaN(mid)&&mid>1000000000000){
+    const d=new Date(mid);
+    if(!isNaN(d.getTime())){
+      return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear();
+    }
+  }
+  return '';
 }
 
 function bhKopyala(){
