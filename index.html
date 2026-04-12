@@ -1057,12 +1057,20 @@ async function sync(manuel){
         .map(sm=>{
           const lm=lokalMst.find(x=>String(x.id)===String(sm.id));
           if(!lm)return sm;
+          // Cari fiyat alanlarını her zaman lokalden koru — sunucu ezmesin
+          const fiyatKoru={};
+          if(lm.nakitFiyat!==undefined&&lm.nakitFiyat!=='')fiyatKoru.nakitFiyat=lm.nakitFiyat;
+          if(lm.yakitFiyat!==undefined&&lm.yakitFiyat!=='')fiyatKoru.yakitFiyat=lm.yakitFiyat;
+          if(lm.faturaliFiyat!==undefined&&lm.faturaliFiyat!=='')fiyatKoru.faturaliFiyat=lm.faturaliFiyat;
+          // ziyaretTipi: sunucuda bu alan yoksa lokal değeri koru
+          if(lm.ziyaretTipi&&lm.ziyaretTipi!=='periyodik'){fiyatKoru.ziyaretTipi=lm.ziyaretTipi;}
+          else if(!sm.ziyaretTipi&&lm.ziyaretTipi){fiyatKoru.ziyaretTipi=lm.ziyaretTipi;}
           const farkS=gf(sm.sonZiyaret||'');
           const farkL=gf(lm.sonZiyaret||'');
           if(farkL>=0&&farkL<farkS){
-            return {...sm,sonZiyaret:lm.sonZiyaret,sonIslem:lm.sonIslem,sonDoluluk:lm.sonDoluluk};
+            return {...sm,...fiyatKoru,sonZiyaret:lm.sonZiyaret,sonIslem:lm.sonIslem,sonDoluluk:lm.sonDoluluk};
           }
-          return sm;
+          return {...sm,...fiyatKoru};
         });
       localStorage.setItem('m',JSON.stringify(mst));
     }
