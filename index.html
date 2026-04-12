@@ -1931,7 +1931,7 @@ function takipBadgeGuncelle(){
 let raporSureSec='bugun';
 async function raporSure(sure,btn){
   raporSureSec=sure;
-  _raporZvrCache={sure:null,zaman:0,veri:[]}; // Cache'i sıfırla
+  _raporZvrCache={sure:null,zaman:0,veri:null}; // Cache'i sıfırla
   document.querySelectorAll('#p-rapor .fb').forEach(b=>b.classList.remove('on'));
   if(btn)btn.classList.add('on');
   // Loading göster
@@ -1952,6 +1952,7 @@ async function alimOzetRender(){
 
   // Alım filtresi
   let zFilt=zvrDonem.filter(z=>z.islem==='Alım Yapıldı');
+  // Dönem filtresi
   if(raporSureSec==='bugun'){
     zFilt=zFilt.filter(z=>{const zt=z.tarih&&z.tarih.includes('T')?ft2(z.tarih):z.tarih;return zt===bugun;});
   } else if(raporSureSec==='hafta'){
@@ -1962,7 +1963,10 @@ async function alimOzetRender(){
     zFilt=zFilt.filter(z=>{const t=z.tarih.includes('T')?new Date(z.tarih):new Date(z.tarih.split('.').reverse().join('-'));return t.getMonth()===ay&&t.getFullYear()===yil;});
   } else if(raporSureSec==='yil'){
     const yil=bugunD.getFullYear();
-    zFilt=zFilt.filter(z=>{const t=z.tarih.includes('T')?new Date(z.tarih):new Date(z.tarih.split('.').reverse().join('-'));return t.getFullYear()===yil;});
+    zFilt=zFilt.filter(z=>{
+      if(!z.tarih)return false;
+      try{const t=z.tarih.includes('T')?new Date(z.tarih):new Date(z.tarih.split('.').reverse().join('-'));return !isNaN(t)&&t.getFullYear()===yil;}catch(e){return false;}
+    });
   }
 
   if(!zFilt.length){c.innerHTML='<div class="bos">Bu dönemde kayıt yok</div>';return;}
@@ -4823,36 +4827,36 @@ function donemBaslangic(sure){
 }
 
 // Cache: dönem verisini tut (zvr'ı kirletmeden)
-let _raporZvrCache={sure:null,zaman:0,veri:[]};
+let _raporZvrCache={sure:null,zaman:0,veri:null};
 
 async function raporZvrGetir(sure){
-  const bas=donemBaslangic(sure);
-  if(!bas) return zvr;
-  if(sure==='bugun') return zvr; // Bugün zaten sync'te geliyor
+  if(sure==='bugun') return zvr;
 
   // Cache geçerli mi? (5 dakika)
-  if(_raporZvrCache.sure===sure&&Date.now()-_raporZvrCache.zaman<300000){
+  if(_raporZvrCache.sure===sure&&_raporZvrCache.veri&&Date.now()-_raporZvrCache.zaman<300000){
     return _raporZvrCache.veri;
   }
 
-  // Lokal'de dönem başlangıcından kayıt var mı kontrol et
-  const basParts=bas.split('.');
-  const basDate=new Date(basParts[2],basParts[1]-1,basParts[0]);
-  const lokalYeterli=zvr.some(z=>{
-    const t=z.tarih?z.tarih.includes('T')?new Date(z.tarih):new Date(z.tarih.split('.').reverse().join('-')):null;
-    return t&&t<=basDate;
-  });
-  if(lokalYeterli) return zvr;
+  const bas=donemBaslangic(sure);
+  if(!bas) return zvr;
 
   // Server'dan çek
-  if(!navigator.onLine) return zvr;
+  if(!navigator.onLine){
+    return zvr; // Offline: lokal veriyle idare et
+  }
   try{
     const r=await ft(SURL+'?action=getZiyaretlerByPeriod&baslangic='+encodeURIComponent(bas)+'&token='+_T,20000);
     const d2=await r.json();
-    const veri=d2.ziyaretler||zvr;
-    _raporZvrCache={sure,zaman:Date.now(),veri};
-    return veri;
-  }catch(e){ return zvr; }
+    const sunucu=d2.ziyaretler;
+    if(sunucu&&sunucu.length>0){
+      _raporZvrCache={sure,zaman:Date.now(),veri:sunucu};
+      return sunucu;
+    }
+    // Server boş döndü → lokal zvr kullan
+    return zvr;
+  }catch(e){
+    return zvr;
+  }
 }
 
 
