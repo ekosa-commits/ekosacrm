@@ -1637,7 +1637,7 @@ function kListeleRender(b,eskiEk){
     return`<div class="kk" style="border-left-color:${al?'var(--yes)':odeme?'#6B3FA0':'var(--kir)'}">
       <div class="kh"><div class="kn">${sol}${z.musteriAdi}</div><div class="ks">${saatStr2(z.saat)||''}</div></div>
       <div class="kd">${z.il||''}${z.personel?' · '+z.personel:''}</div>
-      ${al?`<div class="kd">${z.kg} kg${z.tutar?' · '+z.tutar+'₺':''}</div>`:''}
+      ${al?`<div class="kd">${z.kg} kg${z.tutar?' · '+z.tutar+'₺':''}${parseFloat(z.birimFiyat)>0?' · <b style=\"color:var(--yes-d)\">'+(z.odemeTuru==='Faturalı'||z.odemeTuru==='Yakıt Kartı'?(parseFloat(z.birimFiyat)/1.20).toFixed(2):parseFloat(z.birimFiyat).toFixed(2))+'₺/kg net</b>':''}</div>`:''}
       <span class="kb ${bc}">${etiket}</span>
       ${z.notlar?`<div class="kd" style="font-style:italic;margin-top:3px">${z.notlar}</div>`:''}
       <div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap">
