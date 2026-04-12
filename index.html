@@ -2482,41 +2482,39 @@ function sahaMakbuzModalAc(){
 async function smkbOncekiYukle(mstId){
   const c=el('smkb-onceki');
   const l=el('smkb-onceki-liste');
+  if(!mstId){c.style.display='none';return;}
+  const mst_=mst.find(x=>String(x.id)===String(mstId));
+  const isletmeAd=mst_?mst_.isim:'';
+  const goruldu=new Set();
+  const gecmisTekil=[];
+  const ekle=(ad,tc)=>{if(ad&&tc&&!goruldu.has(String(tc).trim())){goruldu.add(String(tc).trim());gecmisTekil.push({ad,tc});}};
+
+  // 1. Önce lokal mkbListesi + cache'den hemen göster
+  JSON.parse(localStorage.getItem('mkb')||'[]')
+    .filter(m=>String(m.musteriId)===String(mstId)||(isletmeAd&&m.isletme===isletmeAd))
+    .forEach(m=>ekle(m.adSoyad,m.tc));
+  JSON.parse(localStorage.getItem('mkb_kisiler_'+mstId)||'[]').forEach(k=>ekle(k.ad,k.tc));
+
+  // 2. Sunucudan çek (bekle — eski kayıtlar buradan gelir)
   try{
-    // 1. mkbListesi geçmişinden bu işletmenin kişilerini topla (tüm geçmiş)
-    const mkbSrc=JSON.parse(localStorage.getItem('mkb')||'[]');
-    const mst_=mst.find(x=>String(x.id)===String(mstId));
-    const isletmeAd=mst_?mst_.isim:'';
-    const gecmisTekil=[];
-    const goruldu=new Set();
-    // mkbListesi'nden bu işletmeye ait olanlar
-    mkbSrc.filter(m=>String(m.musteriId)===String(mstId)||(isletmeAd&&m.isletme&&m.isletme===isletmeAd))
-      .forEach(m=>{if(m.adSoyad&&m.tc&&!goruldu.has(m.tc)){goruldu.add(m.tc);gecmisTekil.push({ad:m.adSoyad,tc:m.tc});}});
-    // localStorage cache'den ekle (sunucudan önce gelmişse)
-    const cacheKey='mkb_kisiler_'+mstId;
-    JSON.parse(localStorage.getItem(cacheKey)||'[]').forEach(k=>{if(k.tc&&!goruldu.has(k.tc)){goruldu.add(k.tc);gecmisTekil.push(k);}});
-
-    // 2. Sunucudan arka planda çek (varsa)
-    try{
-      const r=await ft(SURL+'?action=getMakbuzKisiler&musteriId='+mstId+'&token='+_T,8000);
-      const d=await r.json();
-      if(d.kisiler&&d.kisiler.length){
-        d.kisiler.forEach(k=>{if(k.tc&&!goruldu.has(k.tc)){goruldu.add(k.tc);gecmisTekil.push(k);}});
-        localStorage.setItem(cacheKey,JSON.stringify(d.kisiler));
-      }
-    }catch(_){}
-
-    if(gecmisTekil.length>0){
-      l.innerHTML=gecmisTekil.map(k=>`
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-          <div><div style="font-size:13px;font-weight:600">${k.ad}</div><div style="font-size:11px;color:var(--gri)">TC: ${k.tc}</div></div>
-          <button class="btn-sm btn-lac" onclick="smkbKisiSec('${k.ad}','${k.tc}')">Seç</button>
-        </div>`).join('');
-      c.style.display='block';
-    } else {
-      c.style.display='none';
+    const r=await ft(SURL+'?action=getMakbuzKisiler&musteriId='+encodeURIComponent(mstId)+'&isletme='+encodeURIComponent(isletmeAd)+'&token='+_T,10000);
+    const d=await r.json();
+    if(d.kisiler&&d.kisiler.length){
+      d.kisiler.forEach(k=>ekle(k.ad,k.tc));
+      localStorage.setItem('mkb_kisiler_'+mstId,JSON.stringify(d.kisiler));
     }
-  }catch(e){}
+  }catch(_){}
+
+  if(gecmisTekil.length>0){
+    l.innerHTML=gecmisTekil.map(k=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div><div style="font-size:13px;font-weight:600">${k.ad}</div><div style="font-size:11px;color:var(--gri)">TC: ${k.tc}</div></div>
+        <button class="btn-sm btn-lac" onclick="smkbKisiSec('${k.ad}','${k.tc}')">Seç</button>
+      </div>`).join('');
+    c.style.display='block';
+  } else {
+    c.style.display='none';
+  }
 }
 
 function smkbKisiSec(ad,tc){el('smkb-ad').value=ad;el('smkb-tc').value=tc;smkbYazi();}
@@ -4523,41 +4521,40 @@ async function mkbOncekiGoster(mstId){
   const c=el('mkb-onceki');
   const l=el('mkb-onceki-liste');
   c.style.display='none';
+  if(!mstId) return;
+  const mst_=mst.find(x=>String(x.id)===String(mstId));
+  const isletmeAd=mst_?mst_.isim:'';
+  const goruldu=new Set();
+  const gecmisTekil=[];
+  const ekle=(ad,tc)=>{if(ad&&tc&&!goruldu.has(String(tc).trim())){goruldu.add(String(tc).trim());gecmisTekil.push({ad,tc});}};
+
+  // 1. Lokal önce
+  JSON.parse(localStorage.getItem('mkb')||'[]')
+    .filter(m=>String(m.musteriId)===String(mstId)||(isletmeAd&&m.isletme===isletmeAd))
+    .forEach(m=>ekle(m.adSoyad,m.tc));
+  JSON.parse(localStorage.getItem('mkb_kisiler_'+mstId)||'[]').forEach(k=>ekle(k.ad,k.tc));
+
+  // 2. Sunucudan çek (bekle)
   try{
-    // 1. mkbListesi geçmişinden bu işletmenin kişilerini topla (tüm geçmiş)
-    const mkbSrc=JSON.parse(localStorage.getItem('mkb')||'[]');
-    const mst_=mst.find(x=>String(x.id)===String(mstId));
-    const isletmeAd=mst_?mst_.isim:'';
-    const gecmisTekil=[];
-    const goruldu=new Set();
-    mkbSrc.filter(m=>String(m.musteriId)===String(mstId)||(isletmeAd&&m.isletme&&m.isletme===isletmeAd))
-      .forEach(m=>{if(m.adSoyad&&m.tc&&!goruldu.has(m.tc)){goruldu.add(m.tc);gecmisTekil.push({ad:m.adSoyad,tc:m.tc});}});
-    // localStorage cache'den ekle
-    const cacheKey='mkb_kisiler_'+mstId;
-    JSON.parse(localStorage.getItem(cacheKey)||'[]').forEach(k=>{if(k.tc&&!goruldu.has(k.tc)){goruldu.add(k.tc);gecmisTekil.push(k);}});
-
-    // 2. Sunucudan arka planda çek
-    try{
-      const r=await ft(SURL+'?action=getMakbuzKisiler&musteriId='+mstId+'&token='+_T,8000);
-      const d=await r.json();
-      if(d.kisiler&&d.kisiler.length){
-        d.kisiler.forEach(k=>{if(k.tc&&!goruldu.has(k.tc)){goruldu.add(k.tc);gecmisTekil.push(k);}});
-        localStorage.setItem(cacheKey,JSON.stringify(d.kisiler));
-      }
-    }catch(_){}
-
-    if(gecmisTekil.length>0){
-      l.innerHTML=gecmisTekil.map(k=>`
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-          <div>
-            <div style="font-size:13px;font-weight:600;color:var(--text)">${k.ad}</div>
-            <div style="font-size:11px;color:var(--gri)">TC: ${k.tc}</div>
-          </div>
-          <button class="btn-sm btn-lac" onclick="mkbKisiSec('${k.ad}','${k.tc}')">Seç</button>
-        </div>`).join('');
-      c.style.display='block';
+    const r=await ft(SURL+'?action=getMakbuzKisiler&musteriId='+encodeURIComponent(mstId)+'&isletme='+encodeURIComponent(isletmeAd)+'&token='+_T,10000);
+    const d=await r.json();
+    if(d.kisiler&&d.kisiler.length){
+      d.kisiler.forEach(k=>ekle(k.ad,k.tc));
+      localStorage.setItem('mkb_kisiler_'+mstId,JSON.stringify(d.kisiler));
     }
-  }catch(e){}
+  }catch(_){}
+
+  if(gecmisTekil.length>0){
+    l.innerHTML=gecmisTekil.map(k=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${k.ad}</div>
+          <div style="font-size:11px;color:var(--gri)">TC: ${k.tc}</div>
+        </div>
+        <button class="btn-sm btn-lac" onclick="mkbKisiSec('${k.ad}','${k.tc}')">Seç</button>
+      </div>`).join('');
+    c.style.display='block';
+  }
 }
 
 function mkbKisiSec(ad,tc){
