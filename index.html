@@ -1028,7 +1028,7 @@ function gBasarili(){
   kuyrukGuncelle(); // Bekleyen işlem sayısını göster
   sync(false);
   stimer=setInterval(()=>sync(false),30000);
-  window.addEventListener('online',()=>{dm('✓ İnternet bağlandı — güncelleniyor','ok');kuyrukIsle().then(()=>sync(false));});
+  window.addEventListener('online',()=>{dm('✓ İnternet bağlandı — güncelleniyor','ok');kuyrukIsle();sync(false);});
 }
 
 function cikis(){
@@ -1044,8 +1044,8 @@ function cikis(){
 //=== SYNC ===
 async function sync(manuel){
   el('sd').className='sync-dot bekl';
-  // Önce kuyrukdaki bekleyen işlemleri gönder
-  await kuyrukIsle();
+  // Kuyruk işlemlerini arka planda başlat (sync'i bloklamaz)
+  kuyrukIsle();
   try{
     const r=await ft(SURL+'?action=getAll&token='+_T,15000);
     const d=await r.json();
@@ -2213,7 +2213,7 @@ function teslimFisiGoster(){
         </div>
         <div style="text-align:right">
           <div style="font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase">Tarih</div>
-          <div style="font-size:13px;font-weight:700;color:#1E2D6B">${z.tarih}</div>
+          <div style="font-size:13px;font-weight:700;color:#1E2D6B">${ft2(z.tarih)}</div>
         </div>
       </div>
       <!-- İşletme -->
@@ -2745,7 +2745,7 @@ function mkbListeGoster(){
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="flex:1">
           <div style="font-size:13px;font-weight:700;color:#222">${m.adSoyad||'—'}</div>
-          <div style="font-size:11px;color:var(--gri)">${m.makbuzNo||''} · ${m.tarih||''}</div>
+          <div style="font-size:11px;color:var(--gri)">${m.makbuzNo||''} · ${ft2(m.tarih)||''}</div>
           <div style="font-size:11px;color:var(--gri)">${m.isletme||''}</div>
           <div style="font-size:13px;font-weight:700;color:var(--lac);margin-top:2px">${parseFloat(m.miktar||0).toFixed(2)} ₺</div>
         </div>
@@ -2771,7 +2771,7 @@ function mkbFiltrele(){
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="flex:1">
           <div style="font-size:13px;font-weight:700;color:#222">${m.adSoyad||'—'}</div>
-          <div style="font-size:11px;color:var(--gri)">${m.makbuzNo||''} · ${m.tarih||''} · ${m.isletme||''}</div>
+          <div style="font-size:11px;color:var(--gri)">${m.makbuzNo||''} · ${ft2(m.tarih)||''} · ${m.isletme||''}</div>
           <div style="font-size:13px;font-weight:700;color:var(--lac);margin-top:2px">${parseFloat(m.miktar||0).toFixed(2)} ₺</div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;margin-left:8px">
@@ -4331,7 +4331,7 @@ function tListele(){
     const takipGecti=t.takipTarihi&&t.takipTarihi<=bugunISO;
     const takipYaklasan=t.takipTarihi&&t.takipTarihi>bugunISO;
     return`<div class="tk ${acl[t.asama]||''}">
-      <div class="tkh"><div class="tki">${t.isletme}</div><span class="tkt">${t.tarih||''}</span></div>
+      <div class="tkh"><div class="tki">${t.isletme}</div><span class="tkt">${ft2(t.tarih)||''}</span></div>
       <div class="tkil">${t.il||''}${t.ilce?' / '+t.ilce:''}${t.personel?' · '+t.personel:''}</div>
       <div class="tkf">
         ${t.nakit?`<span class="tf tn">N:${t.nakit}₺</span>`:''}
