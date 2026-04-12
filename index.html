@@ -406,6 +406,7 @@ input[readonly]{background:#f5f7ff;color:var(--lac);font-weight:600}
       <div id="s-fiyat-bilgi" style="display:none;font-size:12px;background:var(--lac-a);border-radius:7px;padding:6px 10px;margin-top:8px;color:var(--lac)"></div>
       <div id="s-yakit-kart" style="display:none;font-size:12px;background:var(--tur-a);border-radius:7px;padding:6px 10px;margin-top:6px;color:var(--tur);align-items:center;gap:6px">
         ⛽ Yakıt Kartı: <span id="s-kart-no" style="font-weight:700"></span>
+        <button onclick="yakitKartKopyalaAc()" style="background:var(--tur);color:#fff;border:none;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:4px">📋 Kopyala & Shell</button>
       </div>
     </div>
     <button class="btn btn-gri" style="margin-top:8px;padding:9px;font-size:13px" onclick="mAc('ymm')">+ Yeni İşletme Ekle</button>
@@ -2649,7 +2650,7 @@ function yakitKartKopyalaAc(){
   });
   // Shell sayfasını aç
   setTimeout(()=>{
-    window.open('https://sfs.turkiyeshell.com/pratikkart/kart-limit-durum-guncelleme','_blank');
+    window.open('https://sfs.turkiyeshell.com/account','_blank');
   },500);
 }
 
