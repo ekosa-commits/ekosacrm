@@ -1072,11 +1072,13 @@ async function sync(manuel){
       localStorage.setItem('t',JSON.stringify(tkl));
     }
     if(d.ziyaretler&&d.ziyaretler.length){
+      const silZvr=new Set(JSON.parse(localStorage.getItem('silzvr')||'[]'));
       // Sheets tam kaynak - sadece son 2 dakika içinde lokal eklenen kayıtları koru
       const shIds=new Set(d.ziyaretler.map(z=>String(z.id)));
       const simdi=Date.now();
       const yeniLok=zvr.filter(z=>!shIds.has(String(z.id))&&(simdi-parseInt(z.id))<120000);
-      zvr=[...d.ziyaretler,...yeniLok];
+      // Silinen ziyaretleri filtrele
+      zvr=[...d.ziyaretler.filter(z=>!silZvr.has(String(z.id))),...yeniLok];
       localStorage.setItem('z',JSON.stringify(zvr));
     }
     if(d.ayarlar&&d.ayarlar.iller&&d.ayarlar.iller.length){ill=d.ayarlar.iller;localStorage.setItem('i',JSON.stringify(ill));}
@@ -4767,10 +4769,16 @@ function shG(action,data){
 }
 
 function shSil(action,id){
+  // Silme işlemi offline kuyruğa alınır — garantili gider
+  if(!navigator.onLine){
+    kuyruğaEkle(action,{id:id,_sil:true});
+    return;
+  }
   try{
-    const url=SURL+'?action='+action+'&id='+encodeURIComponent(id)+'&token='+_T;
-    fetch(url,{mode:'no-cors',redirect:'follow'}).catch(()=>{});
-  }catch(e){}
+    const payload=encodeURIComponent(JSON.stringify({action,data:{id},token:_T}));
+    const url=SURL+'?action='+action+'&id='+encodeURIComponent(id)+'&token='+_T+'&payload='+payload;
+    fetch(url,{mode:'no-cors'}).catch(()=>kuyruğaEkle(action,{id:id,_sil:true}));
+  }catch(e){kuyruğaEkle(action,{id:id,_sil:true});}
 }
 function dm(msg,tip){const e=el('dm');e.textContent=msg;e.className='dm '+tip;e.style.display='block';setTimeout(()=>e.style.display='none',3500);}
 function nrm(s){return String(s||'').toLowerCase().replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c').trim();}
