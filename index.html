@@ -1083,8 +1083,9 @@ async function sync(manuel){
     // Son 2 dakika içinde lokal eklenen ama server'a henüz ulaşmamış talepleri koru
     var simdi2=Date.now();
     var lokalYeni=acilTalepler.filter(function(t){return !srvIds.has(String(t.id))&&(simdi2-parseInt(t.id))<120000;});
-    // Server verisi + henüz yüklenmemiş lokal = birleştir
-    acilTalepler=d.acilTalepler.concat(lokalYeni);
+    // Server verisinden silinenleri filtrele (silacil listesi + durum=silindi)
+    var filtrelenmis=d.acilTalepler.filter(function(t){return !silacil.has(String(t.id))&&t.durum!=='silindi';});
+    acilTalepler=filtrelenmis.concat(lokalYeni);
     localStorage.setItem('acilTalepler',JSON.stringify(acilTalepler));
     acilTalepRender();
   }}catch(_e){}
@@ -3938,6 +3939,7 @@ function raporAccKur(){
 
 
 let acilTalepler=JSON.parse(localStorage.getItem('acilTalepler')||'[]');
+let silacil=new Set(JSON.parse(localStorage.getItem('silacil')||'[]'));
 let tSiralamaSekli='yeni';
 let _talepTipi='kayitli'; // 'kayitli' | 'yeni'
 
@@ -4037,9 +4039,14 @@ function acilTalepTamamla(id){
 }
 function acilTalepSil(id){
   if(!confirm('Talep silinsin mi?'))return;
+  // Lokal'den kaldır
   acilTalepler=acilTalepler.filter(function(t){return String(t.id)!==String(id);});
   localStorage.setItem('acilTalepler',JSON.stringify(acilTalepler));
-  shSil('deleteAcilTalep',id);
+  // Silinen ID'yi tut — sync'te Sheets'ten gelse bile gösterme
+  silacil.add(String(id));
+  localStorage.setItem('silacil',JSON.stringify([...silacil]));
+  // Sheets'te durumu 'silindi' yap — diğer cihazlar sync'te filtreler
+  shG('updateAcilTalep',{id:id,durum:'silindi'});
   acilTalepRender();
   if(typeof zvRender==='function')zvRender();
 }
@@ -4702,14 +4709,10 @@ function shG(action,data){
 }
 
 function shSil(action,id){
-  // id direkt parametre olarak gönder — Apps Script e.parameter.id ile okuyor
   try{
     const url=SURL+'?action='+action+'&id='+encodeURIComponent(id)+'&token='+_T;
-    fetch(url,{redirect:'follow'})
-      .then(r=>r.text())
-      .then(t=>console.log('Silme OK:',t))
-      .catch(e=>console.log('Silme hatası:',e));
-  }catch(e){console.log('shSil hata:',e);}
+    fetch(url,{mode:'no-cors',redirect:'follow'}).catch(()=>{});
+  }catch(e){}
 }
 function dm(msg,tip){const e=el('dm');e.textContent=msg;e.className='dm '+tip;e.style.display='block';setTimeout(()=>e.style.display='none',3500);}
 function nrm(s){return String(s||'').toLowerCase().replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c').trim();}
