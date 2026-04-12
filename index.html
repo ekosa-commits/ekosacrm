@@ -1563,12 +1563,10 @@ function ymKaydet(){
 
 //=== KAYITLAR ===
 function kListele(){
-  // Tarih seçici
   const tarihInput=el('k-tarih');
   let secTarih=tarihInput?tarihInput.value:'';
   let b;
   if(secTarih){
-    // input value: YYYY-MM-DD → DD.MM.YYYY
     const [y,m,g]=secTarih.split('-');
     b=g+'.'+m+'.'+y;
   } else {
@@ -1577,7 +1575,39 @@ function kListele(){
   }
   const baslik=el('k-baslik');
   if(baslik)baslik.textContent=b===bug()?'Bugünün Kayıtları':b+' Kayıtları';
-  const bk=zvr.filter(z=>{
+
+  // Lokal'de bu tarihe ait kayıt var mı?
+  const lokalVarMi=zvr.some(z=>{
+    if(!z.tarih)return false;
+    const zt=z.tarih.includes('T')?ft2(z.tarih):z.tarih;
+    return zt===b;
+  });
+
+  // Bugün değil ve lokal'de kayıt yok → server'dan çek
+  if(b!==bug()&&!lokalVarMi&&navigator.onLine){
+    const c=el('kl');
+    if(c)c.innerHTML='<div class="bos">⏳ Sunucudan yükleniyor...</div>';
+    fetch(SURL+'?action=getZiyaretlerByDate&tarih='+encodeURIComponent(b)+'&token='+_T)
+      .then(r=>r.json())
+      .then(function(d){
+        // Eski kayıtlar zvr'a EKLENMİYOR — sadece bu görüntü için kullan
+        const eskiEk=(d.ziyaretler||[]).filter(function(z){
+          return !zvr.some(function(x){return String(x.id)===String(z.id);});
+        });
+        kListeleRender(b,eskiEk);
+      })
+      .catch(function(){kListeleRender(b);});
+    return;
+  }
+  kListeleRender(b);
+}
+
+function kListeleRender(b,eskiEk){
+  const baslik=el('k-baslik');
+  if(baslik)baslik.textContent=b===bug()?'Bugünün Kayıtları':b+' Kayıtları';
+  // Sadece bu ekran için ek kayıtlar - zvr'ı değiştirmez
+  const zvrGorunum=eskiEk&&eskiEk.length?zvr.concat(eskiEk):zvr;
+  const bk=zvrGorunum.filter(z=>{
     if(!z.tarih) return false;
     const zt=z.tarih.includes('T')?ft2(z.tarih):z.tarih;
     return zt===b;
@@ -1899,23 +1929,29 @@ function takipBadgeGuncelle(){
 
 //=== RAPOR ÖZETİ ===
 let raporSureSec='bugun';
-function raporSure(sure,btn){
+async function raporSure(sure,btn){
   raporSureSec=sure;
+  _raporZvrCache={sure:null,zaman:0,veri:[]}; // Cache'i sıfırla
   document.querySelectorAll('#p-rapor .fb').forEach(b=>b.classList.remove('on'));
   if(btn)btn.classList.add('on');
-  alimOzetRender();
+  // Loading göster
+  const c=el('alim-ozet');if(c)c.innerHTML='<div class="bos">⏳ Yükleniyor...</div>';
+  await alimOzetRender();
   perPerfRender();
   takipBadgeGuncelle();
   setTimeout(haftalikGrafikCiz,150);
 }
 
-function alimOzetRender(){
+async function alimOzetRender(){
   const c=el('alim-ozet');if(!c)return;
   const bugunD=new Date();
   const bugun=bug();
 
+  // Dönem verisini server'dan veya lokal'den getir
+  const zvrDonem=await raporZvrGetir(raporSureSec);
+
   // Alım filtresi
-  let zFilt=zvr.filter(z=>z.islem==='Alım Yapıldı');
+  let zFilt=zvrDonem.filter(z=>z.islem==='Alım Yapıldı');
   if(raporSureSec==='bugun'){
     zFilt=zFilt.filter(z=>{const zt=z.tarih&&z.tarih.includes('T')?ft2(z.tarih):z.tarih;return zt===bugun;});
   } else if(raporSureSec==='hafta'){
@@ -3268,6 +3304,11 @@ function cariHareketleri(musteriId){
   const odemeler=zvr.filter(z=>String(z.musteriId)===mid&&z.islem==='Ödeme');
   return {alimlar,odemeler};
 }
+function cariHareketleriFrom(dizi,mid){
+  const alimlar=dizi.filter(z=>String(z.musteriId)===String(mid)&&z.islem==='Alım Yapıldı');
+  const odemeler=dizi.filter(z=>String(z.musteriId)===String(mid)&&z.islem==='Ödeme');
+  return {alimlar,odemeler};
+}
 
 function cariBakiye(musteriId){
   const {alimlar,odemeler}=cariHareketleri(musteriId);
@@ -3285,11 +3326,15 @@ function cariBakiye(musteriId){
   return {borcToplam,odemeToplam,bakiye:borcToplam-odemeToplam,baslangic};
 }
 
-function cariRenderIcin(musteriId){
+async function cariRenderIcin(musteriId){
   const c=el('cari-liste');
   const ozet=el('cari-ozet');
   if(!c)return;
-  const {alimlar,odemeler}=cariHareketleri(musteriId);
+  if(c)c.innerHTML='<div class="bos">⏳ Yükleniyor...</div>';
+  // Server'dan tam tarihi çek
+  const mstZvr=await musteriZvrGetir(musteriId);
+  const mid=String(musteriId);
+  const {alimlar,odemeler}=cariHareketleriFrom(mstZvr,mid);
   const {borcToplam,odemeToplam,bakiye,baslangic}=cariBakiye(musteriId);
 
   // Özet kartlar
@@ -4118,8 +4163,13 @@ function trhGosterId(id){
   if(m)trhGoster(m.id, m.isim);
 }
 
-function trhGoster(mstId, isim){
-  var mZvr=zvr.filter(function(z){return String(z.musteriId)===String(mstId);});
+async function trhGoster(mstId, isim){
+  // Tarihçe açılınca loading göster
+  var ttl=el('trh-ttl');if(ttl)ttl.textContent=isim+' — Yükleniyor...';
+  var trh=el('trh-liste');if(trh)trh.innerHTML='<div class="bos">⏳ Yükleniyor...</div>';
+  if(typeof mAc==='function')mAc('trhm');
+  var mZvr=await musteriZvrGetir(mstId);
+  mZvr=mZvr.filter(function(z){return String(z.musteriId)===String(mstId);});
   var alimlar=mZvr.filter(function(z){return z.islem==='Al\u0131m Yap\u0131ld\u0131';});
   var alinmadi=mZvr.filter(function(z){return z.islem==='Al\u0131m Yap\u0131lmad\u0131';});
   var topKg=alimlar.reduce(function(s,z){return s+(parseFloat(z.kg)||0);},0);
@@ -4755,6 +4805,87 @@ async function kuyrukIsle(){
   kuyrukGuncelle();
   if(islendi>0) console.log('✅ Kuyruktan '+islendi+' işlem gönderildi');
 }
+
+
+// Dönem başlangıç tarihini DD.MM.YYYY olarak döndürür
+function donemBaslangic(sure){
+  const b=new Date();
+  if(sure==='bugun') return bug();
+  if(sure==='hafta'){
+    const g=b.getDay()||7; // Pazartesi=1
+    b.setDate(b.getDate()-g+1);
+  } else if(sure==='ay'){
+    b.setDate(1);
+  } else if(sure==='yil'){
+    b.setMonth(0,1);
+  } else return null;
+  return String(b.getDate()).padStart(2,'0')+'.'+String(b.getMonth()+1).padStart(2,'0')+'.'+b.getFullYear();
+}
+
+// Cache: dönem verisini tut (zvr'ı kirletmeden)
+let _raporZvrCache={sure:null,zaman:0,veri:[]};
+
+async function raporZvrGetir(sure){
+  const bas=donemBaslangic(sure);
+  if(!bas) return zvr;
+  if(sure==='bugun') return zvr; // Bugün zaten sync'te geliyor
+
+  // Cache geçerli mi? (5 dakika)
+  if(_raporZvrCache.sure===sure&&Date.now()-_raporZvrCache.zaman<300000){
+    return _raporZvrCache.veri;
+  }
+
+  // Lokal'de dönem başlangıcından kayıt var mı kontrol et
+  const basParts=bas.split('.');
+  const basDate=new Date(basParts[2],basParts[1]-1,basParts[0]);
+  const lokalYeterli=zvr.some(z=>{
+    const t=z.tarih?z.tarih.includes('T')?new Date(z.tarih):new Date(z.tarih.split('.').reverse().join('-')):null;
+    return t&&t<=basDate;
+  });
+  if(lokalYeterli) return zvr;
+
+  // Server'dan çek
+  if(!navigator.onLine) return zvr;
+  try{
+    const r=await ft(SURL+'?action=getZiyaretlerByPeriod&baslangic='+encodeURIComponent(bas)+'&token='+_T,20000);
+    const d2=await r.json();
+    const veri=d2.ziyaretler||zvr;
+    _raporZvrCache={sure,zaman:Date.now(),veri};
+    return veri;
+  }catch(e){ return zvr; }
+}
+
+
+
+// İşletmeye ait tüm ziyaretleri lokal+server'dan getir
+let _mstZvrCache={};
+async function musteriZvrGetir(mstId){
+  const mid=String(mstId);
+  // Cache: 5 dakika
+  if(_mstZvrCache[mid]&&Date.now()-_mstZvrCache[mid].zaman<300000)
+    return _mstZvrCache[mid].veri;
+
+  // Lokal'de kaç kayıt var
+  const lokalZvr=zvr.filter(z=>String(z.musteriId)===mid);
+
+  // Server'dan çek (her zaman - tarihçe tam olsun)
+  if(navigator.onLine){
+    try{
+      const r=await ft(SURL+'?action=getZiyaretlerByMusteri&musteriId='+encodeURIComponent(mid)+'&token='+_T,15000);
+      const d=await r.json();
+      if(d.ziyaretler&&d.ziyaretler.length){
+        // Lokal'deki ödeme kayıtlarını koru (zvr'da islem='Ödeme' olanlar server'da yoktur)
+        const srvIds=new Set(d.ziyaretler.map(z=>String(z.id)));
+        const lokalOdemeler=lokalZvr.filter(z=>z.islem==='Ödeme'&&!srvIds.has(String(z.id)));
+        const veri=[...d.ziyaretler,...lokalOdemeler];
+        _mstZvrCache[mid]={zaman:Date.now(),veri};
+        return veri;
+      }
+    }catch(e){}
+  }
+  return lokalZvr;
+}
+
 
 function shG(action,data){
   if(!navigator.onLine){
